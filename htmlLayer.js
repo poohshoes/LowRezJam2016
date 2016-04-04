@@ -189,19 +189,6 @@ var map1 =
             },
          "tilewidth":4,
          "transparentcolor":"#323f32"
-        }, 
-        {
-         "columns":16,
-         "firstgid":257,
-         "image":"artMockups.png",
-         "imageheight":64,
-         "imagewidth":64,
-         "margin":0,
-         "name":"test1",
-         "spacing":0,
-         "tilecount":256,
-         "tileheight":4,
-         "tilewidth":4
         }],
  "tilewidth":4,
  "version":1,
@@ -251,9 +238,7 @@ Chrome & Firefox
   use CSS to scale the Canvas.
   The above is actually wrong becuase the windows surface pro can have window.devicePixelRatio
   of 2. So:
-  So, in order to draw at the native hardware resolution, you'd have to do your image scaling 
-  in JavaScript as usual but with twice the scaling factor, create the canvas with twice the internal 
-  size and then scale it down again using CSS.
+  In order to draw at the native hardware resolution, you'd have to do your image scaling in JavaScript as usual but with twice the scaling factor, create the canvas with twice the internal size and then scale it down again using CSS.
 Internet Explorer
   Use JavaScript to scale up all images at load time.
 */
@@ -341,59 +326,87 @@ function update(secondsElapsed)
     {
         debug = !debug;
     }
-    
-	// Handle player Actions
+	
+	if (playerAction != null)
+	{
+		// Start Actions
+		var isActionKeyStillDown = false;
+		for(var keyIndex = 0;
+			keyIndex < playerAction.keys.length && !isActionKeyStillDown;
+			keyIndex++)
+		{
+			isActionKeyStillDown = keysDown[playerAction.keys[keyIndex]];
+		}
+		if(!isActionKeyStillDown)
+		{
+			// End Action
+			if(playerAction.name == "move")
+			{
+				player.sprite = player.sprite.animatedFrameSprite.frames[0];
+			}
+			playerAction = null;
+		}
+	}
+	else if(playerAction == null)
+	{
+		// End Actions
+		// Todo(ian): Arrow keys and gamepad?
+		var upKeys = [ascii("W"), ascii("w")];
+		playerAction = testAndCreateMoveAction(upKeys, 0, -1, playerSpriteUp);
+		if (playerAction == null)
+		{
+			var downKeys = [ascii("S"), ascii("s")];
+			playerAction = testAndCreateMoveAction(downKeys, 0, 1, playerSpriteDown);
+		}
+		if (playerAction == null)
+		{
+			var leftKeys = [ascii("A"), ascii("a")];
+			playerAction = testAndCreateMoveAction(leftKeys, -1, 0, playerSpriteLeft);
+		}
+		if (playerAction == null)
+		{
+			var rightKeys = [ascii("D"), ascii("d")];
+			playerAction = testAndCreateMoveAction(rightKeys, 1, 0, playerSpriteRight);
+		}
+	}
+	
+	// Handle Active Player Actions
 	if(playerAction != null)
 	{
 		if(playerAction.name == "move")
 		{
-			var preUpdateSeconds = playerAction.currentSeconds;
 			playerAction.currentSeconds += secondsElapsed;
-			// Note(ian): We can seperate x and y if tiles stop being square.
-			var moveTime = playerAction.totalSeconds / mapData.tileWidth;
-			for(var timePointIndex = 0;
-				timePointIndex < mapData.tileWidth;
-				timePointIndex++)
-			{
-				var timePoint = moveTime * timePointIndex;
-				if(preUpdateSeconds <= timePoint && timePoint < playerAction.currentSeconds)
-				{
-					player.position.x += playerAction.dx;
-					player.position.y += playerAction.dy;
-				}
-			}
 			if(playerAction.currentSeconds >= playerAction.totalSeconds)
 			{
-				playerAction = null;
+				player.position.x += playerAction.dx;
+				player.position.y += playerAction.dy;
+				playerAction.currentSeconds = 0;
 			}
+			
+			// Tile movement.
+			// var preUpdateSeconds = playerAction.currentSeconds;
+			// playerAction.currentSeconds += secondsElapsed;
+			// // Note(ian): We can seperate x and y if tiles stop being square.
+			// var moveTime = playerAction.totalSeconds / mapData.tileWidth;
+			// for(var timePointIndex = 0;
+				// timePointIndex < mapData.tileWidth;
+				// timePointIndex++)
+			// {
+				// var timePoint = moveTime * timePointIndex;
+				// if(preUpdateSeconds <= timePoint && timePoint < playerAction.currentSeconds)
+				// {
+					// player.position.x += playerAction.dx;
+					// player.position.y += playerAction.dy;
+				// }
+			// }
+			// if(playerAction.currentSeconds >= playerAction.totalSeconds)
+			// {
+				// playerAction = null;
+			// }
 		}
 	}
-	cameraOffset.x = -(player.position.x - (baseCanvasWidth / 2));
-	cameraOffset.y = -(player.position.y - (baseCanvasHeight / 2));
-	
-	// Create new player actions
-	if(playerAction == null)
-	{
-		// Todo(ian): Arrow keys and gamepad?
-		if(keysDown[ascii("W")] || keysDown[ascii("w")])
-		{
-			playerAction = moveAction(0, -1);
-		}
-		else if(keysDown[ascii("S")] || keysDown[ascii("s")])
-		{
-			playerAction = moveAction(0, 1);
-		}
-		else if(keysDown[ascii("A")] || keysDown[ascii("a")])
-		{
-			playerAction = moveAction(-1, 0);
-		}
-		else if(keysDown[ascii("D")] || keysDown[ascii("d")])
-		{
-			playerAction = moveAction(1, 0);
-		}
-	}
-	
-	// Todo(ian): Update player sprite to correct walking frame.
+	cameraOffset.x = -(player.position.x + (mapData.tileWidth / 2) - (baseCanvasWidth / 2));
+	cameraOffset.y = -(player.position.y + (mapData.tileWidth / 2) - (baseCanvasHeight / 2));
     
     // Entity Updates
     for(i = 0;
@@ -414,15 +427,27 @@ function update(secondsElapsed)
     
         // Animation
         var sprite = entity.sprite;
-        if(sprite != null && sprite.type == "animated")
-        {
-            sprite.animationSeconds += secondsElapsed;
-            var numFrames = sprite.image.width / sprite.frameWidth;
-            var totalAnimationSeconds = numFrames * (1/sprite.framesPerSecond);
-            if(sprite.animationSeconds > totalAnimationSeconds)
-            {
-                sprite.animationSeconds -= totalAnimationSeconds;
-            }
+        if(sprite != null)
+		{
+			if(sprite.type == "animated")
+			{
+				sprite.animationSeconds += secondsElapsed;
+				var numFrames = sprite.image.width / sprite.frameWidth;
+				var totalAnimationSeconds = numFrames * (1/sprite.framesPerSecond);
+				if(sprite.animationSeconds > totalAnimationSeconds)
+				{
+					sprite.animationSeconds -= totalAnimationSeconds;
+				}
+			}
+			else if(sprite.type == "animatedFrames")
+			{
+				sprite.animationSeconds += secondsElapsed;
+				var totalAnimationSeconds = sprite.animatedFrameSprite.frames.length * (1 / sprite.animatedFrameSprite.framesPerSecond);
+				if(sprite.animationSeconds > totalAnimationSeconds)
+				{
+					sprite.animationSeconds -= totalAnimationSeconds;
+				}
+			}
         }
     }
     
@@ -454,14 +479,27 @@ function update(secondsElapsed)
     }
 }
 
-function moveAction(x, y)
+function testAndCreateMoveAction(keys, dx, dy, sprite)
 {
-	var result = {};
-	result.name = "move"
-	result.currentSeconds = 0;
-	result.totalSeconds = 0.2;
-	result.dx = x
-	result.dy = y;
+	var result = null;
+	var keyIsDown = false;
+	for(var keyIndex = 0;
+		keyIndex < keys.length && !keyIsDown;
+		keyIndex++)
+	{
+		keyIsDown = keysDown[keys[keyIndex]];
+	}
+	if(keyIsDown)
+	{
+		result = {};
+		result.name = "move"
+		result.keys = keys;
+		result.currentSeconds = 0;
+		result.totalSeconds = 0.05;
+		result.dx = dx;
+		result.dy = dy;
+		player.sprite = new animatedFrameSpriteInstance(sprite);
+	}
 	return result;
 }
 
@@ -663,6 +701,13 @@ function drawSprite(
     ignoreCameraOffset // True when drawing UI elements.
     )
 {   
+	if(sprite.type == "animatedFrames")
+	{
+		var frame = Math.floor(sprite.animationSeconds * sprite.animatedFrameSprite.framesPerSecond);
+		frame = frame % sprite.animatedFrameSprite.frames.length;
+		sprite = sprite.animatedFrameSprite.frames[frame];
+	}
+
     var sourceX = 0;
     var sourceY = 0;
     var width = sprite.image.width;
@@ -688,7 +733,6 @@ function drawSprite(
     y *= canvasScale;
     x *= canvasScale;
     
-    
     //canvasContext.save();
     //canvasContext.translate(x + (width * canvasScale / 2), y + (height * canvasScale / 2));
     
@@ -709,7 +753,7 @@ function drawSprite(
         // width * canvasScale, 
         // height * canvasScale); 
 		
-	canvasContext.drawImage(sprite.image, 
+	canvasContext.drawImage(sprite.image,
 		sourceX, sourceY, width, height,
         x, y, width * canvasScale, height * canvasScale);
     
@@ -761,6 +805,33 @@ function animatedSprite(name, frameWidth, frameHeight, framesPerSecond)
     this.flipH = false;
 }
 
+function animatedFrameSprite(root, number, framesPerSecond)
+{
+    this.frames = loadSpriteSet(root, number);
+    this.framesPerSecond = framesPerSecond;
+}
+
+function loadSpriteSet(root, number)
+{
+	var result = [];
+	for (var i = 0; i < number; i++)
+	{
+		var unpaddedString = "" + i;
+		var numberAsString = "0000".substring(0, 4 - (unpaddedString.length)) + unpaddedString; 
+		var path = root + numberAsString + ".png";
+		result[result.length] = new staticSprite(path, 0);
+	}
+	return result;
+}
+
+function animatedFrameSpriteInstance(animatedFrameSprite)
+{
+    this.type = "animatedFrames";
+	this.animatedFrameSprite = animatedFrameSprite
+    this.flipH = false;
+    this.animationSeconds = 0;
+}
+
 function entity(x, y, sprite)
 {
     this.type = "";
@@ -776,19 +847,19 @@ function addEntity(entity)
 
 var HalfPI = Math.PI/2;
 
-var playerSprite = new staticSprite("data/player.png", 0);
-var testSprite = new staticSprite("data/artMockups.png", 0);
+var playerSpriteLeft = new animatedFrameSprite("data/player/FarmerWalkLeft", 4, 6);
+var playerSpriteRight = new animatedFrameSprite("data/player/FarmerWalkRight", 4, 6);
+var playerSpriteUp = new animatedFrameSprite("data/player/FarmerWalkUp", 4, 6);
+var playerSpriteDown = new animatedFrameSprite("data/player/FarmerWalkDown", 4, 6);
 
 var cameraOffset = new v2(0, 0);
 var playerSpawn = new v2(0, 0);
-var player = new entity(0, 0, playerSprite);
+var player = new entity(0, 0, playerSpriteDown.frames[0]);
 var playerAction = null;
 addEntity(player);
 
 var mapData = new Object();
 loadMap(map1);
-
-//var playerSecondsToMoveOneTile 0.5;
 
 // var gameSong = new Audio("data/audio/rockets_land.wav");
 // gameSong.loop = true;
