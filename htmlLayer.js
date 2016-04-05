@@ -319,6 +319,40 @@ function addParticle(particle)
 
 function update(secondsElapsed) 
 {
+	var darkestRate = 0.4;
+	hourOfDay += (secondsElapsed/3600) * 1500;
+	if (hourOfDay > 24)
+	{
+		hourOfDay = 0;
+		// Todo(ian): If you missed bed time, faint?
+	}
+	if (hourOfDay < 5)
+	{
+		daylightRate = darkestRate;
+	}
+	else if (hourOfDay < 8)
+	{
+		var totalHours = 8-5;
+		var timeInMode = hourOfDay - 5;
+		var rateInMode = timeInMode / totalHours;
+		daylightRate = lerp(darkestRate, 0, rateInMode);
+	}
+	else if (hourOfDay < 17)
+	{
+		daylightRate = 0;
+	}
+	else if (hourOfDay < 20)
+	{
+		var totalHours = 20 - 17;
+		var timeInMode = hourOfDay - 17;
+		var rateInMode = timeInMode / totalHours;
+		daylightRate = lerp(0, darkestRate, rateInMode);
+	}
+	else
+	{
+		daylightRate = darkestRate;
+	}
+	
     keysPressed = nextKeysPressed;
     nextKeysPressed = {};
     
@@ -536,11 +570,9 @@ function approach(start, destination, rate)
 
 function draw()
 {
-    var fillColour = "#05b9db";
-    var fillRate = -((playerSpawn.y - player.position.y)/playerSpawn.y);
-    canvasContext.fillStyle = shadeBlend(fillRate, fillColour, "#000000");
-    canvasContext.fillRect(0,0,canvas.width,canvas.height);
-
+    canvasContext.fillStyle = '#000000';
+	canvasContext.fillRect(0,0,canvas.width,canvas.height);
+	
 	for(i = 0;
         i < mapData.layers.length;
         i++)
@@ -638,10 +670,14 @@ function draw()
         }
         drawSprite(sprite, particle.position, false);
     }
+	
+	canvasContext.save();
+	canvasContext.globalAlpha = daylightRate;
+	drawRectangle(new v2(0, 0), new v2(64, 64), '#111111', false);
+	canvasContext.restore();
 }
 
-// // draws from center point
-// function drawRectangle(center, size, color)
+// function drawRectangleCentered(center, size, color)
 // {
     // color = color || 'magenta';
     // var halfSize = v2Divide(size, 2);
@@ -652,19 +688,21 @@ function draw()
     // canvasContext.fillRect(topLeft.x, topLeft.y, size.x * camera.scale, size.y * camera.scale);
 // }
 
-// // draws from top left
-// function drawRectangle2(topLeft, size, color, offset)
-// {
-    // color = color || 'magenta';
-    // var start = v2Copy(topLeft);
-    // start = v2Multiply(start, camera.scale);
-    // if(offset)
-    // {
-        // start = v2Subtract(start, camera.offset);
-    // }
-    // canvasContext.fillStyle = color;
-    // canvasContext.fillRect(start.x, start.y, size.x * camera.scale, size.y * camera.scale);
-// }
+function drawRectangle(topLeft, size, color, offset)
+{
+    //color = color || 'magenta';
+    var start = v2Copy(topLeft);
+    if(offset)
+    {
+        start = v2Subtract(start, cameraOffset);
+    }
+    canvasContext.fillStyle = color;
+    canvasContext.fillRect(
+		start.x * canvasScale, 
+		start.y * canvasScale, 
+		size.x * canvasScale, 
+		size.y * canvasScale);
+}
 
 // function drawCircle(x, y)
 // {
@@ -860,6 +898,9 @@ addEntity(player);
 
 var mapData = new Object();
 loadMap(map1);
+
+var daylightRate = 0;
+var hourOfDay = 0;
 
 // var gameSong = new Audio("data/audio/rockets_land.wav");
 // gameSong.loop = true;
@@ -1113,6 +1154,11 @@ function v2Copy(v)
 function angleToV2(a)
 {
     return new v2(-Math.cos(a), -Math.sin(a));
+}
+
+function lerp(v0, v1, t)
+{
+  return (1-t)*v0 + t*v1;
 }
 
 //
