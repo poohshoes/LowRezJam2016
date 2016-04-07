@@ -434,6 +434,25 @@ function update(secondsElapsed)
 			var rightKeys = [ascii("D"), ascii("d")];
 			playerAction = testAndCreateMoveAction(rightKeys, 1, 0, playerSpriteRight);
 		}
+		if(playerAction != null)
+		{
+			if(playerAction.dx < 0)
+			{
+				playerFacing = facingLeft;
+			}
+			else if(playerAction.dx > 0)
+			{
+				playerFacing = facingRight;
+			}
+			else if(playerAction.dy < 0)
+			{
+				playerFacing = facingUp;
+			}
+			else if(playerAction.dy > 0)
+			{
+				playerFacing = facingDown;
+			}
+		}
 	}
 	
 	// Handle Active Player Actions
@@ -736,6 +755,40 @@ function draw()
         drawSprite(sprite, particle.position, false);
     }
 	
+	var targetTile = new v2();
+	if(playerFacing == facingLeft)
+	{
+		var playerTileX = Math.floor(player.position.x / 4);
+		targetTile.x = playerTileX - 1;
+		targetTile.y = Math.round(player.position.y / 4);
+	}
+	else if(playerFacing == facingRight)
+	{
+		var playerTileX = Math.ceil(player.position.x / 4);
+		targetTile.x = playerTileX + 1;
+		targetTile.y = Math.round(player.position.y / 4);
+	}
+	else if(playerFacing == facingUp)
+	{
+		var playerTileY = Math.floor(player.position.y / 4);
+		targetTile.y = playerTileY - 1;
+		targetTile.x = Math.round(player.position.x / 4);
+	}
+	else if(playerFacing == facingDown)
+	{
+		var playerTileY = Math.ceil(player.position.y / 4);
+		targetTile.y = playerTileY + 1;
+		targetTile.x = Math.round(player.position.x / 4);
+	}
+	var targetPixel = v2Straight(targetTile, new v2(mapData.tileWidth, mapData.tileHeight));
+	var offsetPixel = v2Add(targetPixel, cameraOffset);
+    canvasContext.fillStyle = '#0076D7';
+	canvasContext.fillRect(
+		offsetPixel.x * canvasScale, 
+		offsetPixel.y * canvasScale,
+		4 * canvasScale, 
+		4 * canvasScale);
+
 	canvasContext.save();
 	canvasContext.globalAlpha = daylightRate;
 	drawRectangle(new v2(0, 0), new v2(64, 64), '#111111', false);
@@ -961,6 +1014,12 @@ var playerAction = null;
 
 var mapData = new Object();
 loadMap(map1);
+
+var facingRight = 0;
+var facingUp = 1;
+var facingLeft = 2;
+var facingDown = 3;
+var playerFacing = facingDown;
 var player = new entity(playerSpawn.x, playerSpawn.y, playerSpriteDown.frames[0]);
 addEntity(player);
 
@@ -1098,6 +1157,15 @@ function v2(x, y)
     }
     this.x = x;
     this.y = y;
+}
+
+// Todo(ian): Whats the proper name for this?
+function v2Straight(one, two)
+{
+	var result = new v2();
+	result.x = one.x * two.x;
+	result.y = one.y * two.y;
+	return result;
 }
 
 function v2Multiply(one, scalar)
