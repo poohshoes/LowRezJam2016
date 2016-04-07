@@ -780,7 +780,7 @@ function draw()
 		targetTile.y = playerTileY + 1;
 		targetTile.x = Math.round(player.position.x / 4);
 	}
-	var targetPixel = v2Straight(targetTile, new v2(mapData.tileWidth, mapData.tileHeight));
+	var targetPixel = v2Hadamard(targetTile, new v2(mapData.tileWidth, mapData.tileHeight));
 	var offsetPixel = v2Add(targetPixel, cameraOffset);
     canvasContext.fillStyle = '#0076D7';
 	canvasContext.fillRect(
@@ -1159,8 +1159,7 @@ function v2(x, y)
     this.y = y;
 }
 
-// Todo(ian): Whats the proper name for this?
-function v2Straight(one, two)
+function v2Hadamard(one, two)
 {
 	var result = new v2();
 	result.x = one.x * two.x;
