@@ -14,7 +14,7 @@ var map1 =
          "name":"Grass",
          "opacity":1,
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":30,
          "x":0,
          "y":0
@@ -25,7 +25,7 @@ var map1 =
          "name":"BaseDecor",
          "opacity":1,
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":30,
          "x":0,
          "y":0
@@ -36,7 +36,7 @@ var map1 =
          "name":"Interior",
          "opacity":1,
          "type":"tilelayer",
-         "visible":false,
+         "visible":true,
          "width":30,
          "x":0,
          "y":0
@@ -71,8 +71,19 @@ var map1 =
                 }],
          "opacity":1,
          "type":"objectgroup",
-         "visible":false,
+         "visible":true,
          "width":0,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 21, 21, 0, 0, 0, 0, 21, 21, 21, 21, 21, 21, 21, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 21, 21, 21, 21, 21, 21, 0, 0, 0, 0, 0, 0, 0, 21, 21, 21, 21, 0, 0, 0, 0, 21, 21, 21, 21, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 21, 21, 0, 21, 0, 0, 21, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 21, 0, 0, 0, 21, 21, 21, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 21, 21, 21, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 21, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 21, 0, 0, 0, 21, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 21, 21, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 21, 21, 21, 0, 21, 21, 21, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21],
+         "height":30,
+         "name":"collision",
+         "opacity":0.200000002980232,
+         "type":"tilelayer",
+         "visible":true,
+         "width":30,
          "x":0,
          "y":0
         }],
@@ -433,8 +444,7 @@ function update(secondsElapsed)
 			playerAction.currentSeconds += secondsElapsed;
 			if(playerAction.currentSeconds >= playerAction.totalSeconds)
 			{
-				player.position.x += playerAction.dx;
-				player.position.y += playerAction.dy;
+				TryMoveEntity(player, playerAction.dx, playerAction.dy);
 				playerAction.currentSeconds = 0;
 			}
 			
@@ -532,6 +542,40 @@ function update(secondsElapsed)
             particles.splice(i, 1);
         }
     }
+}
+
+function TryMoveEntity(entity, dx, dy)
+{
+	var x = entity.position.x + dx;
+	var y = entity.position.y + dy;
+	var postMoveRectangle = new rectangle(x, y, 4, 4);
+	
+	var collision = false;
+	for(var mapX = 0;
+		mapX < mapData.width && !collision;
+		mapX++)
+	{
+		for(var mapY = 0;
+			mapY < mapData.height && !collision;
+			mapY++)
+		{
+			var mapIndex = mapX + (mapY * mapData.width);
+			if(mapData.collisionTiles[mapIndex] != 0)
+			{
+				var tileRectangle = new rectangle(mapX * 4, mapY * 4, 4, 4);
+				if(rectanglesAllignedOverlap(postMoveRectangle, tileRectangle))
+				{
+					collision = true;
+				}
+			}
+		}
+	}
+	
+	if(!collision)
+	{
+		entity.position.x += dx;
+		entity.position.y += dy;
+	}
 }
 
 function testAndCreateMoveAction(keys, dx, dy, sprite)
@@ -974,6 +1018,7 @@ function loadMap(mapJson)
     mapData.tileHeight = mapJson.tileheight;
 	mapData.tileSets = [];
     mapData.layers = [];
+	mapData.collisionTiles = [mapJson.width * mapJson.height];
     
     for(var i = 0; i < mapJson.tilesets.length; i++)
     {
@@ -992,35 +1037,26 @@ function loadMap(mapJson)
         var layer = mapJson.layers[i];
         if(layer.type == "tilelayer")
         {
-            // if(layer.name == "collisionTiles")
-            // {
-                // // Note(ian): It could be better to store and access these as tiles instead of making an entity for each tile.
-                // for(var tileX = 0;
-                    // tileX < mapData.width;
-                    // tileX++)
-                // {
-                    // for(var tileY = 0;
-                        // tileY < mapData.height;
-                        // tileY++)
-                    // {
-                        // // Todo(ian): Scale and offset this properly.
-                        // // var spriteID = layer.data[tileX + (tileY * mapData.width)];
-                        // // if(spriteID != 0)
-                        // // {
-                            // // var x = tileX * mapData.tileWidth;
-                            // // var y = tileY * mapData.tileHeight;
-                            // // var wall = new entity(x + (mapData.tileWidth/2), y + (mapData.tileHeight/2) , null);
-                            // // wall.physics = new rectanglePhysics(mapData.tileWidth, mapData.tileHeight);
-                            // // addEntity(wall);
-                        // // }
-                    // }
-                // }
-            // }
-            // else
-            // {
-            mapData.layers[mapData.layers.length] = layer;
+            if(layer.name == "collision")
+            {
+                for(var tileX = 0;
+                    tileX < mapData.width;
+                    tileX++)
+                {
+                    for(var tileY = 0;
+                        tileY < mapData.height;
+                        tileY++)
+                    {
+						var spriteId = layer.data[tileX + (tileY * mapData.width)]
+						mapData.collisionTiles[tileX + (tileY * mapData.width)] = spriteId;
+                    }
+                }
+            }
+            else
+            {
+				mapData.layers[mapData.layers.length] = layer;
                 // layerZ++;
-            // }
+            }
         }
         else if(layer.type == "objectgroup")
         {
@@ -1158,6 +1194,23 @@ function v2Copy(v)
 function angleToV2(a)
 {
     return new v2(-Math.cos(a), -Math.sin(a));
+}
+
+function rectangle(x, y, width, height)
+{
+    this.min = new v2(x, y);
+	this.max = new v2(x + width, y + height);
+}
+
+function rectanglesAllignedOverlap(a, b)
+{
+	var result = !(
+		a.min.x >= b.max.x ||
+		b.min.x >= a.max.x ||
+		a.min.y >= b.max.y ||
+		b.min.y >= a.max.y
+		);
+	return result;
 }
 
 function lerp(v0, v1, t)
