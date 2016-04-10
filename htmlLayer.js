@@ -715,7 +715,15 @@ function approach(start, destination, rate)
 
 function draw()
 {
-    canvasContext.fillStyle = '#000000';
+	// if(mode == mode_text)
+	// {
+		// //http://paletton.com/#uid=30T0X0kllllaFw0g0qFqFg0w0aF
+		// canvasContext.fillStyle = '#AA7239';
+	// }
+	// else
+	// {
+		canvasContext.fillStyle = '#000000';
+	// }
 	canvasContext.fillRect(0,0,canvas.width,canvas.height);
 	
 	if(mode == mode_game)
@@ -852,6 +860,10 @@ function draw()
 			4 * canvasScale, 
 			4 * canvasScale);
 
+		var item = inventory[selectedItemIndex];
+		var sprite = GetInventorySprite(item.name);
+		drawSprite(sprite, new v2(1, 55), true);
+			
 		canvasContext.save();
 		canvasContext.globalAlpha = daylightRate;
 		drawRectangle(new v2(0, 0), new v2(64, 64), '#111111', false);
@@ -859,8 +871,14 @@ function draw()
 	}
 	else if (mode == mode_inventory)
 	{
-		var currentPosition = new v2(0, 0);
-		// todo selected item text
+		var currentPosition = new v2(1, 1);
+		
+		if(selectedItemIndex < inventory.length)
+		{
+			var item = inventory[selectedItemIndex];
+			drawText(item.name, currentPosition, 62);
+		}
+		
 		currentPosition.x = 1;
 		currentPosition.y = 9;
 		for(var itemIndex = 0;
@@ -884,6 +902,141 @@ function draw()
 			}
 		}
 	}
+	else if (mode == mode_text)
+	{
+		//var text = "The quick brown fox jumps over the lazy dog.";
+		//var text = "0123456789abcdefghijklmnopqrstuvwxyz.,!-?";
+		var text = "Despite my efforts this is hardly legible.  Maybe other colors would work?  Kerning might help.";
+		
+		drawText(text, new v2(1, 1), 62);
+	}
+}
+
+function drawText(text, position, width)
+{		
+	var parts = text.split(" ");
+	var currentPosition = new v2FromV2(position);
+	var glyphCount = 0;
+	for(var partIndex = 0;
+		partIndex < parts.length;
+		partIndex++)
+	{
+		var part = parts[partIndex];
+		var partWidth = TextWidth(part);
+		
+		if(partWidth > width)
+		{
+			var first = "";
+			var nextGlyphWidth = font.glyphWidths[GetGlyphIndex(part[first.length])];
+			var currentWidth = 0;
+			while(currentWidth + nextGlyphWidth < width)
+			{
+				first += part[first.length];
+				currentWidth += nextGlyphWidth;
+				nextGlyphWidth = font.glyphWidths[GetGlyphIndex(part[first.length])];
+			}
+			var second = part.substring(first.length);
+			parts.splice(partIndex + 1, 0, second);
+			part = first;
+		}
+		
+		if(currentPosition.x + partWidth > width)
+		{
+			currentPosition.x = position.x;
+			currentPosition.y += 7;
+		}
+		for(var textIndex = 0;
+			textIndex < part.length;
+			textIndex++)
+		{
+			var character = part[textIndex];
+			var glyphIndex = GetGlyphIndex(character);
+			var glyphX = font.glyphX[glyphIndex];
+			var glyphWidth = font.glyphWidths[glyphIndex];
+			var image;
+			if(glyphCount % 2 == 0)
+			{
+				image = font.imageA;
+			}
+			else
+			{
+				image = font.imageB;
+			}
+			drawImage(image, glyphX, 0, glyphWidth, 6,
+				currentPosition, true);
+			glyphCount++;
+			currentPosition.x += glyphWidth;
+		}
+		currentPosition.x += 1;
+	}
+}
+
+function TextWidth(text)
+{
+	var result = 0;
+	for(var textIndex = 0;
+		textIndex < text.length;
+		textIndex++)
+	{
+		var character = text[textIndex];
+		if(character == " ")
+		{
+			result += 1;
+		}
+		else
+		{
+			var glyphIndex = GetGlyphIndex(character);
+			var glyphWidth = font.glyphWidths[glyphIndex];
+			result += glyphWidth;
+		}
+	}
+	return result;
+}
+
+function GetGlyphIndex(character)
+{
+	var characterValue = ascii(character);
+	var glyphIndex = 0;
+	if(48 <= characterValue && characterValue < 58)
+	{
+		// Numbers
+		glyphIndex = characterValue - 48; 
+	}
+	else if(97 <= characterValue && characterValue < 123)
+	{
+		// Lower case
+		glyphIndex = characterValue - 97 + 10; 
+	}
+	else if(64 <= characterValue && characterValue < 90)
+	{
+		// Caps
+		glyphIndex = characterValue - 65 + 10; 
+	}
+	else if(character == ".")
+	{
+		glyphIndex = 10 + 26;
+	}
+	else if(character == ",")
+	{
+		glyphIndex = 10 + 26 + 1;
+	}
+	else if(character == "!")
+	{
+		glyphIndex = 10 + 26 + 2;
+	}
+	else if(character == "-")
+	{
+		glyphIndex = 10 + 26 + 3;
+	}
+	else if(character == "?")
+	{
+		glyphIndex = 10 + 26 + 4;
+	}
+	else if(character == "'")
+	{
+		glyphIndex = 10 + 26 + 5;
+	}
+	return glyphIndex;
 }
 
 function GetInventorySprite(name)
@@ -898,10 +1051,10 @@ function GetInventorySprite(name)
 			result = wateringCanSprite;
 			break;
 		case inventory_tomatoSeeds:
-			result = tomatoSprite;
+			result = tomatoSeedSprite;
 			break;
 		case inventory_tomato:
-			result = tomatoSeedSprite;
+			result = tomatoSprite;
 			break;
 	}
 	return result;
@@ -963,32 +1116,10 @@ function drawEntity(entity)
     // }
 }
 
-function drawSprite(
-    sprite, 
-    position,
-    ignoreCameraOffset // True when drawing UI elements.
-    )
-{   
-	if(sprite.type == "animatedFrames")
-	{
-		var frame = Math.floor(sprite.animationSeconds * sprite.animatedFrameSprite.framesPerSecond);
-		frame = frame % sprite.animatedFrameSprite.frames.length;
-		sprite = sprite.animatedFrameSprite.frames[frame];
-	}
-
-    var sourceX = 0;
-    var sourceY = 0;
-    var width = sprite.image.width;
-    var height = sprite.image.height;
-        
-    if(sprite.type == "animated")
-    {
-        var frame = Math.floor(sprite.animationSeconds * sprite.framesPerSecond);
-        sourceX = sprite.frameWidth * frame;
-        width = sprite.frameWidth;
-        height = sprite.frameHeight;
-    }
-	
+function drawImage(image,
+	sourceX, sourceY, width, height, 
+	position, ignoreCameraOffset)
+{	
 	var y = position.y;
     var x = position.x;
     
@@ -1021,7 +1152,7 @@ function drawSprite(
         // width * canvasScale, 
         // height * canvasScale); 
 		
-	canvasContext.drawImage(sprite.image,
+	canvasContext.drawImage(image,
 		sourceX, sourceY, width, height,
         x, y, width * canvasScale, height * canvasScale);
     
@@ -1033,21 +1164,50 @@ function drawSprite(
     // }
 }
 
-var font = "Arial";
-function drawText(start, text, fontHeight, color)
-{
-    color = color || colorText;
-    canvasContext.font = fontHeight + "px " + font;
-    canvasContext.fillStyle = color;
-    
-    var position = new v2(start.x, start.y);
-    position.y += fontHeight;
-    
-    canvasContext.save();
-    canvasContext.scale(camera.scale, camera.scale);
-    canvasContext.fillText(text, position.x, position.y);
-    canvasContext.restore();
+function drawSprite(
+    sprite, 
+    position,
+    ignoreCameraOffset // True when drawing UI elements.
+    )
+{   
+	if(sprite.type == "animatedFrames")
+	{
+		var frame = Math.floor(sprite.animationSeconds * sprite.animatedFrameSprite.framesPerSecond);
+		frame = frame % sprite.animatedFrameSprite.frames.length;
+		sprite = sprite.animatedFrameSprite.frames[frame];
+	}
+
+    var sourceX = 0;
+    var sourceY = 0;
+    var width = sprite.image.width;
+    var height = sprite.image.height;
+        
+    if(sprite.type == "animated")
+    {
+        var frame = Math.floor(sprite.animationSeconds * sprite.framesPerSecond);
+        sourceX = sprite.frameWidth * frame;
+        width = sprite.frameWidth;
+        height = sprite.frameHeight;
+    }
+	
+	drawImage(sprite.image, sourceX, sourceY, width, height, position, ignoreCameraOffset);
 }
+
+// var font = "Arial";
+// function drawText(start, text, fontHeight, color)
+// {
+    // color = color || colorText;
+    // canvasContext.font = fontHeight + "px " + font;
+    // canvasContext.fillStyle = color;
+    
+    // var position = new v2(start.x, start.y);
+    // position.y += fontHeight;
+    
+    // canvasContext.save();
+    // canvasContext.scale(camera.scale, camera.scale);
+    // canvasContext.fillText(text, position.x, position.y);
+    // canvasContext.restore();
+// }
 
 //
 //====== INITIALIZE ======
@@ -1146,6 +1306,7 @@ var hourOfDay = 0;
 
 var mode_game = "game";
 var mode_inventory = "inventory";
+var mode_text = "text";
 var mode = mode_game;
 
 var selectionSprite = new staticSprite("data/inventory/selection.png", 0);
@@ -1175,13 +1336,27 @@ inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
 inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
 inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
 
-
 var actionKeys = [ascii("E"), ascii("e")]
 var toggleKeys = [ascii("Q"), ascii("q")]
 var upKeys = [ascii("W"), ascii("w")];
 var downKeys = [ascii("S"), ascii("s")];
 var leftKeys = [ascii("A"), ascii("a")];
 var rightKeys = [ascii("D"), ascii("d")];
+
+var fontLoaded = false;
+var font = {};
+font.imageA = new Image();
+font.imageB = new Image();
+font.imageA.src = "data/fontA.png";
+font.imageB.src = "data/fontB.png";
+font.glyphWidths = [3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 3, 3, 1, 3, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 2, 3, 1];
+font.glyphX = [0];
+for(var glyphIndex = 1;
+	glyphIndex < font.glyphWidths.length;
+	glyphIndex++)
+{
+	font.glyphX[glyphIndex] = font.glyphX[glyphIndex - 1] + 1 + font.glyphWidths[glyphIndex - 1];
+}
 
 // var gameSong = new Audio("data/audio/rockets_land.wav");
 // gameSong.loop = true;
@@ -1301,6 +1476,12 @@ function loadMap(mapJson)
 //
 //====== MATH ======
 //
+
+function v2FromV2(v2)
+{
+    this.x = v2.x;
+    this.y = v2.y;
+}
 
 function v2(x, y)
 {
