@@ -388,20 +388,68 @@ function update(secondsElapsed)
     keysPressed = nextKeysPressed;
     nextKeysPressed = {};
     
-    if(keysPressed[ascii("q")])
-    {
-        debug = !debug;
-    }
+    // if(keysPressed[ascii("q")])
+    // {
+        // debug = !debug;
+    // }
 	
-	if (playerAction != null)
+	if (mode == mode_inventory)
 	{
-		// Start Actions
-		var isActionKeyStillDown = false;
-		for(var keyIndex = 0;
-			keyIndex < playerAction.keys.length && !isActionKeyStillDown;
-			keyIndex++)
+		if(keyPressed(toggleKeys) ||
+			keyPressed(actionKeys))
 		{
-			isActionKeyStillDown = keysDown[playerAction.keys[keyIndex]];
+			mode = mode_game;
+		}
+		
+		if(keyPressed(leftKeys))
+		{
+			if(selectedItemIndex > 0)
+			{
+				selectedItemIndex--;
+			}
+		}
+		else if(keyPressed(rightKeys))
+		{
+			if(selectedItemIndex < inventory.length - 1)
+			{
+				selectedItemIndex++;
+			}
+		}
+		else if(keyPressed(upKeys))
+		{
+			if(selectedItemIndex >= inventoryItemsPerRow)
+			{
+				selectedItemIndex -= inventoryItemsPerRow;
+			}
+		}
+		else if(keyPressed(downKeys))
+		{
+			if(selectedItemIndex + inventoryItemsPerRow < inventory.length)
+			{
+				selectedItemIndex += inventoryItemsPerRow;
+			}
+		}
+	}
+	else if (mode == mode_game)
+	{
+		if(keyPressed(toggleKeys))
+		{
+			mode = mode_inventory;
+		}
+	}
+	
+	if(playerAction != null)
+	{
+		// End Actions
+		var isActionKeyStillDown = false;
+		if (mode == mode_game)
+		{
+			for(var keyIndex = 0;
+				keyIndex < playerAction.keys.length && !isActionKeyStillDown;
+				keyIndex++)
+			{
+				isActionKeyStillDown = keysDown[playerAction.keys[keyIndex]];
+			}
 		}
 		if(!isActionKeyStillDown)
 		{
@@ -413,25 +461,21 @@ function update(secondsElapsed)
 			playerAction = null;
 		}
 	}
-	else if(playerAction == null)
+	else if(playerAction == null && mode == mode_game)
 	{
-		// End Actions
+		// Start Actions
 		// Todo(ian): Arrow keys and gamepad?
-		var upKeys = [ascii("W"), ascii("w")];
 		playerAction = testAndCreateMoveAction(upKeys, 0, -1, playerSpriteUp);
 		if (playerAction == null)
 		{
-			var downKeys = [ascii("S"), ascii("s")];
 			playerAction = testAndCreateMoveAction(downKeys, 0, 1, playerSpriteDown);
 		}
 		if (playerAction == null)
 		{
-			var leftKeys = [ascii("A"), ascii("a")];
 			playerAction = testAndCreateMoveAction(leftKeys, -1, 0, playerSpriteLeft);
 		}
 		if (playerAction == null)
 		{
-			var rightKeys = [ascii("D"), ascii("d")];
 			playerAction = testAndCreateMoveAction(rightKeys, 1, 0, playerSpriteRight);
 		}
 		if(playerAction != null)
@@ -597,9 +641,8 @@ function TryMoveEntity(entity, dx, dy)
 	}
 }
 
-function testAndCreateMoveAction(keys, dx, dy, sprite)
+function keyHeld(keys)
 {
-	var result = null;
 	var keyIsDown = false;
 	for(var keyIndex = 0;
 		keyIndex < keys.length && !keyIsDown;
@@ -607,7 +650,25 @@ function testAndCreateMoveAction(keys, dx, dy, sprite)
 	{
 		keyIsDown = keysDown[keys[keyIndex]];
 	}
-	if(keyIsDown)
+	return keyIsDown;
+}
+
+function keyPressed(keys)
+{
+	var keyIsDown = false;
+	for(var keyIndex = 0;
+		keyIndex < keys.length && !keyIsDown;
+		keyIndex++)
+	{
+		keyIsDown = keysPressed[keys[keyIndex]];
+	}
+	return keyIsDown;
+}
+
+function testAndCreateMoveAction(keys, dx, dy, sprite)
+{
+	var result = null;
+	if(keyHeld(keys))
 	{
 		result = {};
 		result.name = "move"
@@ -657,142 +718,193 @@ function draw()
     canvasContext.fillStyle = '#000000';
 	canvasContext.fillRect(0,0,canvas.width,canvas.height);
 	
-	for(i = 0;
-        i < mapData.layers.length;
-        i++)
-    {
-        var layer = mapData.layers[i];
-        for(var tileX = 0;
-            tileX < mapData.width;
-            tileX++)
-        {
-            for(var tileY = 0;
-                tileY < mapData.height;
-                tileY++)
-            {
-                var spriteId = layer.data[tileX + (tileY * mapData.width)];
-                if(spriteId != 0)
-                {
-                    var x = tileX * mapData.tileWidth;
-                    var y = tileY * mapData.tileHeight;
-					
-					var spritesTileSet = null;
-					for(var tileSetIndex = 0;
-						tileSetIndex < mapData.tileSets.length && spritesTileSet == null;
-						tileSetIndex++)
+	if(mode == mode_game)
+	{
+		for(i = 0;
+			i < mapData.layers.length;
+			i++)
+		{
+			var layer = mapData.layers[i];
+			for(var tileX = 0;
+				tileX < mapData.width;
+				tileX++)
+			{
+				for(var tileY = 0;
+					tileY < mapData.height;
+					tileY++)
+				{
+					var spriteId = layer.data[tileX + (tileY * mapData.width)];
+					if(spriteId != 0)
 					{
-						var tileSet = mapData.tileSets[tileSetIndex];
-						if(spriteId < tileSet.firstId + tileSet.tileCount)
+						var x = tileX * mapData.tileWidth;
+						var y = tileY * mapData.tileHeight;
+						
+						var spritesTileSet = null;
+						for(var tileSetIndex = 0;
+							tileSetIndex < mapData.tileSets.length && spritesTileSet == null;
+							tileSetIndex++)
 						{
-							spritesTileSet = tileSet;
+							var tileSet = mapData.tileSets[tileSetIndex];
+							if(spriteId < tileSet.firstId + tileSet.tileCount)
+							{
+								spritesTileSet = tileSet;
+							}
 						}
+						
+						var tileSetId = spriteId - spritesTileSet.firstId;
+						var tileSetTileX = tileSetId % spritesTileSet.widthInTiles;
+						var tileSetTileY = Math.floor(tileSetId / spritesTileSet.widthInTiles);
+						
+						var tileSetX = tileSetTileX * mapData.tileWidth;
+						var tileSetY = tileSetTileY * mapData.tileHeight;
+						
+						canvasContext.drawImage(spritesTileSet.image, 
+							tileSetX, tileSetY, mapData.tileWidth, mapData.tileHeight,
+							(x + cameraOffset.x) * canvasScale, 
+							(y + cameraOffset.y) * canvasScale, 
+							mapData.tileWidth * canvasScale, 
+							mapData.tileHeight * canvasScale);
 					}
-					
-					var tileSetId = spriteId - spritesTileSet.firstId;
-					var tileSetTileX = tileSetId % spritesTileSet.widthInTiles;
-					var tileSetTileY = Math.floor(tileSetId / spritesTileSet.widthInTiles);
-					
-					var tileSetX = tileSetTileX * mapData.tileWidth;
-					var tileSetY = tileSetTileY * mapData.tileHeight;
-					
-					canvasContext.drawImage(spritesTileSet.image, 
-						tileSetX, tileSetY, mapData.tileWidth, mapData.tileHeight,
-						(x + cameraOffset.x) * canvasScale, 
-						(y + cameraOffset.y) * canvasScale, 
-						mapData.tileWidth * canvasScale, 
-						mapData.tileHeight * canvasScale);
-                }
-            }
-        }
-    }
-    
-    // todo(ian): Order by Y value before drawing.
-    entities.sort(
-        function (a, b)
-        {
-            return a.position.y - b.position.y;
-        });
-    
-    for(i = 0;
-        i < entities.length;
-        i++)
-    {
-        drawEntity(entities[i]);
-    }
-    
-    // backing for coins and text
-    // var backingHeight = 20;
-    // drawRectangle2(new v2(0, baseHeight - backingHeight), new v2(baseWidth, backingHeight), "#404040", false);
-        
-    // var fontHeight = 16;
-    // drawText(new v2(10, baseHeight - fontHeight - 4), coinsText, fontHeight, "#ffffff");
-        
-	// var fontHeight = 10;
-	// canvasContext.font = fontHeight + "px " + font; // note(ian): Must set this for measureText to work.
-	// var x = (baseWidth - canvasContext.measureText(activePhrase).width) / 2;
-	// var y = baseHeight - 6 - fontHeight;
-	// drawText(new v2(x, y), activePhrase, fontHeight, "#FFFFFF");
-	    
-    for(i = particles.length -1;
-        i >= 0;
-        i--)
-    {
-        var particle = particles[i];
-        var lifePercent = particle.live / particle.lifeMax;
-        var sprite = smokeSprite;
-        if(lifePercent > 0.25)
-        {
-            sprite = smokeSprite2;
-        }
-        if(lifePercent > 0.50)
-        {
-            sprite = smokeSprite3;
-        }
-        if(lifePercent > 0.75)
-        {
-            sprite = smokeSprite4;
-        }
-        drawSprite(sprite, particle.position, false);
-    }
-	
-	var targetTile = new v2();
-	if(playerFacing == facingLeft)
-	{
-		var playerTileX = Math.floor(player.position.x / 4);
-		targetTile.x = playerTileX - 1;
-		targetTile.y = Math.round(player.position.y / 4);
-	}
-	else if(playerFacing == facingRight)
-	{
-		var playerTileX = Math.ceil(player.position.x / 4);
-		targetTile.x = playerTileX + 1;
-		targetTile.y = Math.round(player.position.y / 4);
-	}
-	else if(playerFacing == facingUp)
-	{
-		var playerTileY = Math.floor(player.position.y / 4);
-		targetTile.y = playerTileY - 1;
-		targetTile.x = Math.round(player.position.x / 4);
-	}
-	else if(playerFacing == facingDown)
-	{
-		var playerTileY = Math.ceil(player.position.y / 4);
-		targetTile.y = playerTileY + 1;
-		targetTile.x = Math.round(player.position.x / 4);
-	}
-	var targetPixel = v2Hadamard(targetTile, new v2(mapData.tileWidth, mapData.tileHeight));
-	var offsetPixel = v2Add(targetPixel, cameraOffset);
-    canvasContext.fillStyle = '#0076D7';
-	canvasContext.fillRect(
-		offsetPixel.x * canvasScale, 
-		offsetPixel.y * canvasScale,
-		4 * canvasScale, 
-		4 * canvasScale);
+				}
+			}
+		}
+		
+		// todo(ian): Order by Y value before drawing.
+		entities.sort(
+			function (a, b)
+			{
+				return a.position.y - b.position.y;
+			});
+		
+		for(i = 0;
+			i < entities.length;
+			i++)
+		{
+			drawEntity(entities[i]);
+		}
+		
+		// backing for coins and text
+		// var backingHeight = 20;
+		// drawRectangle2(new v2(0, baseHeight - backingHeight), new v2(baseWidth, backingHeight), "#404040", false);
+			
+		// var fontHeight = 16;
+		// drawText(new v2(10, baseHeight - fontHeight - 4), coinsText, fontHeight, "#ffffff");
+			
+		// var fontHeight = 10;
+		// canvasContext.font = fontHeight + "px " + font; // note(ian): Must set this for measureText to work.
+		// var x = (baseWidth - canvasContext.measureText(activePhrase).width) / 2;
+		// var y = baseHeight - 6 - fontHeight;
+		// drawText(new v2(x, y), activePhrase, fontHeight, "#FFFFFF");
+			
+		for(i = particles.length -1;
+			i >= 0;
+			i--)
+		{
+			var particle = particles[i];
+			var lifePercent = particle.live / particle.lifeMax;
+			var sprite = smokeSprite;
+			if(lifePercent > 0.25)
+			{
+				sprite = smokeSprite2;
+			}
+			if(lifePercent > 0.50)
+			{
+				sprite = smokeSprite3;
+			}
+			if(lifePercent > 0.75)
+			{
+				sprite = smokeSprite4;
+			}
+			drawSprite(sprite, particle.position, false);
+		}
+		
+		var targetTile = new v2();
+		if(playerFacing == facingLeft)
+		{
+			var playerTileX = Math.floor(player.position.x / 4);
+			targetTile.x = playerTileX - 1;
+			targetTile.y = Math.round(player.position.y / 4);
+		}
+		else if(playerFacing == facingRight)
+		{
+			var playerTileX = Math.ceil(player.position.x / 4);
+			targetTile.x = playerTileX + 1;
+			targetTile.y = Math.round(player.position.y / 4);
+		}
+		else if(playerFacing == facingUp)
+		{
+			var playerTileY = Math.floor(player.position.y / 4);
+			targetTile.y = playerTileY - 1;
+			targetTile.x = Math.round(player.position.x / 4);
+		}
+		else if(playerFacing == facingDown)
+		{
+			var playerTileY = Math.ceil(player.position.y / 4);
+			targetTile.y = playerTileY + 1;
+			targetTile.x = Math.round(player.position.x / 4);
+		}
+		var targetPixel = v2Hadamard(targetTile, new v2(mapData.tileWidth, mapData.tileHeight));
+		var offsetPixel = v2Add(targetPixel, cameraOffset);
+		canvasContext.fillStyle = '#0076D7';
+		canvasContext.fillRect(
+			offsetPixel.x * canvasScale, 
+			offsetPixel.y * canvasScale,
+			4 * canvasScale, 
+			4 * canvasScale);
 
-	canvasContext.save();
-	canvasContext.globalAlpha = daylightRate;
-	drawRectangle(new v2(0, 0), new v2(64, 64), '#111111', false);
-	canvasContext.restore();
+		canvasContext.save();
+		canvasContext.globalAlpha = daylightRate;
+		drawRectangle(new v2(0, 0), new v2(64, 64), '#111111', false);
+		canvasContext.restore();
+	}
+	else if (mode == mode_inventory)
+	{
+		var currentPosition = new v2(0, 0);
+		// todo selected item text
+		currentPosition.x = 1;
+		currentPosition.y = 9;
+		for(var itemIndex = 0;
+			itemIndex < inventory.length;
+			itemIndex++)
+		{
+			var item = inventory[itemIndex];
+			var sprite = GetInventorySprite(item.name);
+			drawSprite(sprite, currentPosition, true);
+			
+			if(itemIndex == selectedItemIndex)
+			{
+				drawSprite(selectionSprite, currentPosition, true);
+			}
+			
+			currentPosition.x += 9;
+			if((itemIndex + 1) % inventoryItemsPerRow == 0)
+			{
+				currentPosition.x = 1;
+				currentPosition.y += 9;
+			}
+		}
+	}
+}
+
+function GetInventorySprite(name)
+{
+	var result = "notSet";
+	switch(name)
+	{
+		case inventory_hoe:
+			result = hoeSprite;
+			break;
+		case inventory_wateringCan:
+			result = wateringCanSprite;
+			break;
+		case inventory_tomatoSeeds:
+			result = tomatoSprite;
+			break;
+		case inventory_tomato:
+			result = tomatoSeedSprite;
+			break;
+	}
+	return result;
 }
 
 // function drawRectangleCentered(center, size, color)
@@ -941,6 +1053,12 @@ function drawText(start, text, fontHeight, color)
 //====== INITIALIZE ======
 //
 
+function inventoryItem(name, amount)
+{
+	this.name = name;
+	this.amoutn = amount;
+}
+
 function staticSprite(name, artRotation)
 {
     this.type = "static";
@@ -1025,6 +1143,45 @@ addEntity(player);
 
 var daylightRate = 0;
 var hourOfDay = 0;
+
+var mode_game = "game";
+var mode_inventory = "inventory";
+var mode = mode_game;
+
+var selectionSprite = new staticSprite("data/inventory/selection.png", 0);
+var hoeSprite = new staticSprite("data/inventory/hoe.png", 0);
+var wateringCanSprite = new staticSprite("data/inventory/wateringCan.png", 0);
+var tomatoSprite = new staticSprite("data/inventory/tomato.png", 0);
+var tomatoSeedSprite = new staticSprite("data/inventory/tomatoSeed.png", 0);
+
+var inventoryItemsPerRow = 6;
+var inventory_hoe = "Hoe";
+var inventory_wateringCan = "Watering Can";
+var inventory_tomatoSeeds = "Tomato Seed";
+var inventory_tomato = "Tomato";
+var selectedItemIndex = 0;
+var inventory = [];
+inventory[inventory.length] = new inventoryItem(inventory_hoe, 1);
+inventory[inventory.length] = new inventoryItem(inventory_wateringCan, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomatoSeeds, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomato, 1);
+
+
+var actionKeys = [ascii("E"), ascii("e")]
+var toggleKeys = [ascii("Q"), ascii("q")]
+var upKeys = [ascii("W"), ascii("w")];
+var downKeys = [ascii("S"), ascii("s")];
+var leftKeys = [ascii("A"), ascii("a")];
+var rightKeys = [ascii("D"), ascii("d")];
 
 // var gameSong = new Audio("data/audio/rockets_land.wav");
 // gameSong.loop = true;
