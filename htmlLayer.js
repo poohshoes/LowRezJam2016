@@ -364,7 +364,7 @@ Internet Explorer
   Use JavaScript to scale up all images at load time.
 */
 
-var desiredPixelSize = 4;
+var desiredPixelSize = 8;
 var devicePixelRatio = window.devicePixelRatio || 1; // Todo(ian): Verify this works.
 var canvasScale = desiredPixelSize * devicePixelRatio;
 
@@ -524,6 +524,36 @@ function update(secondsElapsed)
 		if(keyPressed(toggleKeys))
 		{
 			mode = mode_inventory;
+		}
+		
+		var targetTile = GetPlayerTargetTile();
+		var target = mapData.tileEntities[targetTile.x + (targetTile.y * mapData.width)];
+		// farmTileEntity.wet = false;
+		// farmTileEntity.state = "";
+		// farmTileEntity.growDays = 0;
+		// var inventory_hoe = "Hoe";
+		// var inventory_wateringCan = "Watering Can";
+		// var inventory_tomatoSeeds = "Tomato Seed";
+		// var inventory_tomato = "Tomato";
+		if(target && target.type == "farmLand")
+		{
+			if(keyPressed(actionKeys))
+			{
+				var item = inventory[selectedItemIndex];
+				if(item.name == inventory_hoe)
+				{
+					// do the player action animatin.
+					// play hoe sound.
+					target.state = cropState_hoed;
+					target.growDays = 0;
+				}
+				if(item.name == inventory_wateringCan)
+				{
+					// do the player action animation.
+					// play a watering sound.
+					target.wet = true;
+				}
+			}
 		}
 	}
 	
@@ -865,6 +895,56 @@ function draw()
 				}
 			}
 		}
+		for(var tileX = 0;
+			tileX < mapData.width;
+			tileX++)
+		{
+			for(var tileY = 0;
+				tileY < mapData.height;
+				tileY++)
+			{
+				var farmTile = mapData.tileEntities[tileX + (tileY * mapData.width)];
+				if(farmTile)
+				{
+					var dirtImage;
+					if(farmTile.state == cropState_none)
+					{
+						if (farmTile.wet)
+						{
+							dirtImage = dirtWetUnhoed;
+						}
+						else
+						{
+							dirtImage = dirtDryUnhoed;
+						}
+					}
+					else if(farmTile.state == cropState_hoed)
+					{
+						if (farmTile.wet)
+						{
+							dirtImage = dirtWet;
+						}
+						else
+						{
+							dirtImage = dirtDry;
+						}
+					}
+					else
+					{
+						if (farmTile.wet)
+						{
+							dirtImage = dirtWetPlanted;
+						}
+						else
+						{
+							dirtImage = dirtDryPlanted;
+						}
+					}
+					var imagePosition = new v2(tileX * mapData.tileWidth, tileY * mapData.tileHeight);
+					drawSprite(dirtImage, imagePosition, false);
+				}
+			}
+		}
 		
 		// todo(ian): Order by Y value before drawing.
 		entities.sort(
@@ -915,31 +995,7 @@ function draw()
 			drawSprite(sprite, particle.position, false);
 		}
 		
-		var targetTile = new v2();
-		if(playerFacing == facingLeft)
-		{
-			var playerTileX = Math.floor(player.position.x / 4);
-			targetTile.x = playerTileX - 1;
-			targetTile.y = Math.round(player.position.y / 4);
-		}
-		else if(playerFacing == facingRight)
-		{
-			var playerTileX = Math.ceil(player.position.x / 4);
-			targetTile.x = playerTileX + 1;
-			targetTile.y = Math.round(player.position.y / 4);
-		}
-		else if(playerFacing == facingUp)
-		{
-			var playerTileY = Math.floor(player.position.y / 4);
-			targetTile.y = playerTileY - 1;
-			targetTile.x = Math.round(player.position.x / 4);
-		}
-		else if(playerFacing == facingDown)
-		{
-			var playerTileY = Math.ceil(player.position.y / 4);
-			targetTile.y = playerTileY + 1;
-			targetTile.x = Math.round(player.position.x / 4);
-		}
+		var targetTile = GetPlayerTargetTile();
 		var targetPixel = v2Hadamard(targetTile, new v2(mapData.tileWidth, mapData.tileHeight));
 		var offsetPixel = v2Add(targetPixel, cameraOffset);
 		canvasContext.fillStyle = '#0076D7';
@@ -1025,6 +1081,36 @@ function draw()
 		
 		drawText(text, new v2(1, 1), 62);
 	}
+}
+
+function GetPlayerTargetTile()
+{
+	var targetTile = new v2();
+	if(playerFacing == facingLeft)
+	{
+		var playerTileX = Math.floor(player.position.x / 4);
+		targetTile.x = playerTileX - 1;
+		targetTile.y = Math.round(player.position.y / 4);
+	}
+	else if(playerFacing == facingRight)
+	{
+		var playerTileX = Math.ceil(player.position.x / 4);
+		targetTile.x = playerTileX + 1;
+		targetTile.y = Math.round(player.position.y / 4);
+	}
+	else if(playerFacing == facingUp)
+	{
+		var playerTileY = Math.floor(player.position.y / 4);
+		targetTile.y = playerTileY - 1;
+		targetTile.x = Math.round(player.position.x / 4);
+	}
+	else if(playerFacing == facingDown)
+	{
+		var playerTileY = Math.ceil(player.position.y / 4);
+		targetTile.y = playerTileY + 1;
+		targetTile.x = Math.round(player.position.x / 4);
+	}
+	return targetTile;
 }
 
 function drawText(text, position, width)
@@ -1405,6 +1491,9 @@ var cameraOffset = new v2(0, 0);
 var playerSpawn = new v2(0, 0);
 var playerAction = null;
 
+var cropState_none = "none";
+var cropState_hoed = "hoed";
+
 var mapData = new Object();
 loadMap(map1);
 
@@ -1429,6 +1518,13 @@ var hoeSprite = new staticSprite("data/inventory/hoe.png", 0);
 var wateringCanSprite = new staticSprite("data/inventory/wateringCan.png", 0);
 var tomatoSprite = new staticSprite("data/inventory/tomato.png", 0);
 var tomatoSeedSprite = new staticSprite("data/inventory/tomatoSeed.png", 0);
+
+var dirtDryUnhoed = new staticSprite("data/dirtDryUnhoed.png", 0);
+var dirtWetUnhoed = new staticSprite("data/dirtWetUnhoed.png", 0);
+var dirtDry = new staticSprite("data/dirtDry.png", 0);
+var dirtWet = new staticSprite("data/dirtWet.png", 0);
+var dirtDryPlanted = new staticSprite("data/dirtDryPlanted.png", 0);
+var dirtWetPlanted = new staticSprite("data/dirtWetPlanted.png", 0);
 
 var inventoryItemsPerRow = 6;
 var inventory_hoe = "Hoe";
@@ -1516,6 +1612,7 @@ function loadMap(mapJson)
 	mapData.tileSets = [];
     mapData.layers = [];
 	mapData.collisionTiles = [mapJson.width * mapJson.height];
+	mapData.tileEntities = [mapJson.width * mapJson.height];
     
     for(var i = 0; i < mapJson.tilesets.length; i++)
     {
@@ -1572,6 +1669,29 @@ function loadMap(mapJson)
 						position.x = Math.floor(position.x / mapData.tileWidth) * mapData.tileWidth;
 						position.y = Math.floor(position.y / mapData.tileHeight) * mapData.tileHeight;
                         playerSpawn = position;
+					}
+					else if (object.name == "farmland")
+					{
+						var tileXStart = Math.ceil(object.x / mapData.tileWidth);
+						var tileYStart = Math.ceil(object.y / mapData.tileHeight);
+						var tileXEnd = Math.floor((object.x + object.width) / mapData.tileWidth);
+						var tileYEnd = Math.floor((object.y + object.height) / mapData.tileHeight);
+						for(var tileX = tileXStart;
+							tileX <= tileXEnd;
+							tileX++)
+						{
+							for(var tileY = tileYStart;
+								tileY <= tileYEnd;
+								tileY++)
+							{
+								var farmTileEntity = {};
+								farmTileEntity.type = "farmLand";
+								farmTileEntity.wet = false;
+								farmTileEntity.state = cropState_none;
+								farmTileEntity.growDays = 0;
+								mapData.tileEntities[tileX + (tileY * mapData.width)] = farmTileEntity;
+							}
+						}
 					}
                 }
 			}
