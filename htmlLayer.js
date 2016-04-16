@@ -535,23 +535,61 @@ function update(secondsElapsed)
 		// var inventory_wateringCan = "Watering Can";
 		// var inventory_tomatoSeeds = "Tomato Seed";
 		// var inventory_tomato = "Tomato";
+		var action = "";
+		var item = inventory[selectedItemIndex];
 		if(target && target.type == "farmLand")
 		{
-			if(keyPressed(actionKeys))
+			if(item.name == inventory_hoe)
 			{
-				var item = inventory[selectedItemIndex];
-				if(item.name == inventory_hoe)
+				action = "hoe";
+			}
+			if(item.name == inventory_wateringCan)
+			{
+				action = "water";
+			}
+			for(var plantIndex = 0;
+				plantIndex < plants.count;
+				plantIndex++)
+			{
+				var plant = plants[plantIndex];
+				if(target.state == cropState_hoed && item.name == plant.name)
 				{
-					// do the player action animatin.
-					// play hoe sound.
-					target.state = cropState_hoed;
-					target.growDays = 0;
+					action = "plantSeeds";
 				}
-				if(item.name == inventory_wateringCan)
+			}
+		}
+		
+		actionHighlight = action != "";
+		actionHighlightPosition.x = targetTile.x * mapData.tileWidth;
+		actionHighlightPosition.y = targetTile.y * mapData.tileHeight;
+		
+		if(keyPressed(actionKeys))
+		{
+			if(action == "hoe")
+			{
+				// do the player action animatin.
+				// play hoe sound.
+				target.state = cropState_hoed;
+				target.growDays = 0;
+			}
+			if(action == "water")
+			{
+				// do the player action animation.
+				// play a watering sound.
+				target.wet = true;
+			}
+			if(action == "plantSeeds")
+			{
+				target.growDays = 0;
+				target.state = item.name;
+				item.amount--;
+				if (item.amount == 0)
 				{
-					// do the player action animation.
-					// play a watering sound.
-					target.wet = true;
+					inventory.splice(selectedItemIndex, 1);
+					if(selectedItemIndex >= inventory.length && selectedItemIndex != 0)
+					{
+						selectedItemIndex--;
+					}
 				}
 			}
 		}
@@ -942,10 +980,36 @@ function draw()
 					}
 					var imagePosition = new v2(tileX * mapData.tileWidth, tileY * mapData.tileHeight);
 					drawSprite(dirtImage, imagePosition, false);
+					
+					for(var plantIndex = 0;
+						plantIndex < plants.length;
+						plantIndex++)
+					{
+						var plant = plants[plantIndex];
+						if(farmTile.state == plant.inventoryName)
+						{
+							if(plant.growDays == 0)
+							{
+								
+							}
+							else
+							{
+								var plantPosition = new v2(imagePosition);
+								plantPosition.x += 4 - plant.spriteSheet.frameHeight;
+								var percent = farmTile.growDays / plant.daysToGrow;
+								drawSpriteSheet(plant.spriteSheet, plantPosition, percent, false);
+							}
+						}
+					}
 				}
 			}
 		}
 		
+		if (actionHighlight)
+		{
+			drawSprite(actionHighlightSprite, actionHighlightPosition, false);
+		}
+
 		// todo(ian): Order by Y value before drawing.
 		entities.sort(
 			function (a, b)
@@ -995,15 +1059,18 @@ function draw()
 			drawSprite(sprite, particle.position, false);
 		}
 		
-		var targetTile = GetPlayerTargetTile();
-		var targetPixel = v2Hadamard(targetTile, new v2(mapData.tileWidth, mapData.tileHeight));
-		var offsetPixel = v2Add(targetPixel, cameraOffset);
-		canvasContext.fillStyle = '#0076D7';
-		canvasContext.fillRect(
-			offsetPixel.x * canvasScale, 
-			offsetPixel.y * canvasScale,
-			4 * canvasScale, 
-			4 * canvasScale);
+		if(debug)
+		{
+			var targetTile = GetPlayerTargetTile();
+			var targetPixel = v2Hadamard(targetTile, new v2(mapData.tileWidth, mapData.tileHeight));
+			var offsetPixel = v2Add(targetPixel, cameraOffset);
+			canvasContext.fillStyle = '#0076D7';
+			canvasContext.fillRect(
+				offsetPixel.x * canvasScale, 
+				offsetPixel.y * canvasScale,
+				4 * canvasScale, 
+				4 * canvasScale);
+		}
 
 		var item = inventory[selectedItemIndex];
 		var sprite = GetInventorySprite(item.name);
@@ -1257,6 +1324,18 @@ function GetInventorySprite(name)
 		case inventory_tomato:
 			result = tomatoSprite;
 			break;
+		case inventory_pumpkinSeeds:
+			result = pumpkinSeedSprite;
+			break;
+		case inventory_pumpkin:
+			result = pumpkinSprite;
+			break;
+		case inventory_cornSeeds:
+			result = cornSeedSprite;
+			break;
+		case inventory_corn:
+			result = cornSprite;
+			break;
 	}
 	return result;
 }
@@ -1365,6 +1444,28 @@ function drawImage(image,
     // }
 }
 
+function drawSpriteSheet(spriteSheet, position, percent, ignoreCameraOffset)
+{
+	if(percent > 1)
+	{
+		percent = 1;
+	}
+
+    var sourceX = 0;
+    var sourceY = 0;
+    var width = sprite.image.width;
+    var height = sprite.image.height;
+        
+    //if(sprite.type == "linearSpriteSheet")
+	var numFrames = spriteSheet.image.width / spriteSheet.frameWidth;
+	var frame = Math.floor(percent * numFrames);
+	sourceX = sprite.frameWidth * frame;
+	width = sprite.frameWidth;
+	height = sprite.frameHeight;
+	
+	drawImage(sprite.image, sourceX, sourceY, width, height, position, ignoreCameraOffset);
+}
+
 function drawSprite(
     sprite, 
     position,
@@ -1438,6 +1539,15 @@ function animatedSprite(name, frameWidth, frameHeight, framesPerSecond)
     this.animationSeconds = 0;
     this.framesPerSecond = framesPerSecond;
     this.flipH = false;
+}
+
+function spriteSheet(name, frameWidth, frameHeight)
+{
+    this.type = "linearSpriteSheet";
+    this.image = new Image();
+    this.image.src = name;
+    this.frameWidth = frameWidth;
+    this.frameHeight = frameHeight;
 }
 
 function animatedFrameSprite(root, number, framesPerSecond)
@@ -1518,6 +1628,14 @@ var hoeSprite = new staticSprite("data/inventory/hoe.png", 0);
 var wateringCanSprite = new staticSprite("data/inventory/wateringCan.png", 0);
 var tomatoSprite = new staticSprite("data/inventory/tomato.png", 0);
 var tomatoSeedSprite = new staticSprite("data/inventory/tomatoSeed.png", 0);
+var pumpkinSprite = new staticSprite("data/inventory/pumpkin.png", 0);
+var pumpkinSeedSprite = new staticSprite("data/inventory/pumpkinSeed.png", 0);
+var cornSprite = new staticSprite("data/inventory/corn.png", 0);
+var cornSeedSprite = new staticSprite("data/inventory/cornSeed.png", 0);
+
+var actionHighlightSprite = new staticSprite("data/actionHighlight.png", 0);
+var actionHighlight = false;
+var actionHighlightPosition = new v2();
 
 var dirtDryUnhoed = new staticSprite("data/dirtDryUnhoed.png", 0);
 var dirtWetUnhoed = new staticSprite("data/dirtWetUnhoed.png", 0);
@@ -1530,13 +1648,36 @@ var inventoryItemsPerRow = 6;
 var inventory_hoe = "Hoe";
 var inventory_wateringCan = "Watering Can";
 var inventory_tomatoSeeds = "Tomato Seed";
+var inventory_pumpkinSeeds = "Pumpkin Seed";
+var inventory_cornSeeds = "Corn Seed";
 var inventory_tomato = "Tomato";
+var inventory_pumpkin = "Pumpkin";
+var inventory_corn = "Corn";
 var selectedItemIndex = 0;
 var inventory = [];
 inventory[inventory.length] = new inventoryItem(inventory_hoe, 1);
 inventory[inventory.length] = new inventoryItem(inventory_wateringCan, 1);
-inventory[inventory.length] = new inventoryItem(inventory_tomatoSeeds, 1);
+inventory[inventory.length] = new inventoryItem(inventory_tomatoSeeds, 3);
+inventory[inventory.length] = new inventoryItem(inventory_pumpkinSeeds, 3);
+inventory[inventory.length] = new inventoryItem(inventory_cornSeeds, 3);
 inventory[inventory.length] = new inventoryItem(inventory_tomato, 2);
+
+var spriteSheetPlantTomato = new spriteSheet("data/plantTomato.png", 4, 4);
+var spriteSheetPlantPumpkin = new spriteSheet("data/plantPumpkin.png", 4, 4);
+var spriteSheetPlantCorn = new spriteSheet("data/plantCorn.png", 4, 7);
+function plant(name, inventoryName, days, multiHarvest, reGrowDays, spriteSheet)
+{
+	this.name = name;
+	this.inventoryName = inventoryName;
+	this.daysToGrow = days;
+	this.multiHarvest = multiHarvest;
+	this.reGrowDays = reGrowDays;
+	this.spriteSheet = spriteSheet;
+}
+var plants = [];
+plants[plants.length] = new plant(inventory_tomatoSeeds, inventory_tomato, 6, true, 2, spriteSheetPlantTomato);
+plants[plants.length] = new plant(inventory_pumpkinSeeds, inventory_pumpkin, 6, false, 0, spriteSheetPlantPumpkin);
+plants[plants.length] = new plant(inventory_cornSeeds, inventory_corn, 4, true, 3, spriteSheetPlantTomato);
 
 var actionKeys = [ascii("E"), ascii("e")]
 var toggleKeys = [ascii("Q"), ascii("q")]
