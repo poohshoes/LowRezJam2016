@@ -894,37 +894,95 @@ function NextDayEvents()
 }
 
 function TryMoveEntity(entity, dx, dy)
-{
-	var x = entity.position.x + dx;
-	var y = entity.position.y + dy;
-	var postMoveRectangle = new rectangle(x, y, 4, 4);
-	
+{	
+	var x1 = entity.position.x;
+	var x2 = entity.position.x + dx;
+	if(x1 > x2)
+	{
+		var temp = x1;
+		x1 = x2;
+		x2 = temp;
+	}
+	var y1 = entity.position.y;
+	var y2 = entity.position.y + dy;
+	if(y1 > y2)
+	{
+		var temp = y1;
+		y1 = y2;
+		y2 = temp;
+	}
+	var tileX1 = Math.floor(x1 / mapData.tileWidth);
+	var tileX2 = Math.ceil(x2 / mapData.tileWidth);
+	var tileY1 = Math.floor(y1 / mapData.tileHeight);
+	var tileY2 = Math.ceil(y2 / mapData.tileHeight);
 	var collision = false;
-	for(var mapX = 0;
-		mapX < mapData.width && !collision;
+	for(var mapX = tileX1;
+		mapX <= tileX2 && !collision;
 		mapX++)
 	{
-		for(var mapY = 0;
-			mapY < mapData.height && !collision;
+		for(var mapY = tileY1;
+			mapY <= tileY2 && !collision;
 			mapY++)
 		{
 			var mapIndex = mapX + (mapY * mapData.width);
 			if(mapData.collisionTiles[mapIndex] != 0)
 			{
-				var tileRectangle = new rectangle(mapX * 4, mapY * 4, 4, 4);
-				if(rectanglesAllignedOverlap(postMoveRectangle, tileRectangle))
-				{
-					collision = true;
-				}
+				collision = true;
 			}
 		}
 	}
 	
-	if(!collision)
+	if(collision)
+	{
+		// Assumes dx or dy is 1 and the other is 0.
+		if(true)
+		{
+			var offsetX = entity.position.x % 4;
+			var offsetY = entity.position.y % 4;
+			var scaleX = Math.abs(dx);
+			var scaleY = Math.abs(dy);
+			offset = offsetX + offsetY;
+			if(offset != 0)
+			{
+				if (offset <= 2)
+				{
+					var bestMoveX = Math.floor(entity.position.x / mapData.tileWidth) + dx;
+					var bestMoveY = Math.floor(entity.position.y / mapData.tileHeight) + dy;
+					var mapIndex = MapIndex(bestMoveX, bestMoveY);
+					if(mapData.collisionTiles[mapIndex] == 0)
+					{
+						var entityTileX = Math.floor(entity.position.x / mapData.tileWidth);
+						var entityTileY = Math.floor(entity.position.y / mapData.tileHeight);
+						entity.position.x -= scaleY;
+						entity.position.y -= scaleX;
+					}
+				}
+				if (offset >= 2)
+				{
+					var bestMoveX = Math.ceil(entity.position.x / mapData.tileWidth) + dx;
+					var bestMoveY = Math.ceil(entity.position.y / mapData.tileHeight) + dy;
+					var mapIndex = MapIndex(bestMoveX, bestMoveY);
+					if(mapData.collisionTiles[mapIndex] == 0)
+					{
+						var entityTileX = Math.floor(entity.position.x / mapData.tileWidth);
+						var entityTileY = Math.floor(entity.position.y / mapData.tileHeight);
+						entity.position.x += scaleY;
+						entity.position.y += scaleX;
+					}
+				}
+			}
+		}
+	}
+	else
 	{
 		entity.position.x += dx;
 		entity.position.y += dy;
 	}
+}
+
+function MapIndex(x, y)
+{
+	return x + (y * mapData.width);
 }
 
 function keyHeld(keys)
@@ -1015,24 +1073,33 @@ function draw()
 	
 	if(mode == mode_game)
 	{
-		for(i = 0;
-			i < mapData.layers.length;
-			i++)
-		{
-			var layer = mapData.layers[i];
-			for(var tileX = 0;
-				tileX < mapData.width;
-				tileX++)
+		entities.sort(
+			function (a, b)
 			{
-				for(var tileY = 0;
-					tileY < mapData.height;
-					tileY++)
+				return a.position.y - b.position.y;
+			});
+			
+		for(var tileX = 0;
+			tileX < mapData.width;
+			tileX++)
+		{
+			for(var tileY = 0;
+				tileY < mapData.height;
+				tileY++)
+			{	
+				var x = tileX * mapData.tileWidth;
+				var y = tileY * mapData.tileHeight;
+				
+				// Art Tiles
+				for(i = 0;
+					i < mapData.layers.length;
+					i++)
 				{
+					var layer = mapData.layers[i];
+					
 					var spriteId = layer.data[tileX + (tileY * mapData.width)];
 					if(spriteId != 0)
 					{
-						var x = tileX * mapData.tileWidth;
-						var y = tileY * mapData.tileHeight;
 						
 						var spritesTileSet = null;
 						for(var tileSetIndex = 0;
@@ -1061,16 +1128,8 @@ function draw()
 							mapData.tileHeight * canvasScale);
 					}
 				}
-			}
-		}
-		for(var tileX = 0;
-			tileX < mapData.width;
-			tileX++)
-		{
-			for(var tileY = 0;
-				tileY < mapData.height;
-				tileY++)
-			{
+				
+				// Farm Tiles
 				var farmTile = mapData.tileEntities[tileX + (tileY * mapData.width)];
 				if(farmTile)
 				{
@@ -1108,9 +1167,27 @@ function draw()
 							dirtImage = dirtDryPlanted;
 						}
 					}
-					var imagePosition = new v2(tileX * mapData.tileWidth, tileY * mapData.tileHeight);
+					var imagePosition = new v2(x, y);
 					drawSprite(dirtImage, imagePosition, false);
-					
+				}
+			}
+		}
+		
+		for(var tileY = 0;
+			tileY < mapData.height;
+			tileY++)
+		{	
+			var y = tileY * mapData.tileHeight;
+			var yEnd = y + mapData.tileHeight;
+			for(var tileX = 0;
+				tileX < mapData.width;
+				tileX++)
+			{
+				var x = tileX * mapData.tileWidth;
+				
+				var farmTile = mapData.tileEntities[tileX + (tileY * mapData.width)];
+				if(farmTile)
+				{				
 					var plant = GetPlantInfo(farmTile.state);
 					if(plant)
 					{
@@ -1120,7 +1197,8 @@ function draw()
 						}
 						else
 						{
-							var plantPosition = new v2FromV2(imagePosition);
+							var plantPosition = new v2(x, y);
+							plantPosition.y -= 1;
 							plantPosition.y += 4 - plant.spriteSheet.frameHeight;
 							var percent = farmTile.growDays / plant.daysToGrow;
 							drawSpriteSheet(plant.spriteSheet, plantPosition, percent, false);
@@ -1128,25 +1206,23 @@ function draw()
 					}
 				}
 			}
+							
+			// Entities
+			for(var entityIndex = 0;
+				entityIndex < entities.length;
+				entityIndex++)
+			{
+				var entity = entities[entityIndex];
+				if(entity.position.y >= y && entity.position.y < yEnd)
+				{
+					drawEntity(entity);
+				}
+			}
 		}
 		
 		if (actionHighlight)
 		{
 			drawSprite(actionHighlightSprite, actionHighlightPosition, false);
-		}
-
-		// todo(ian): Order by Y value before drawing.
-		entities.sort(
-			function (a, b)
-			{
-				return a.position.y - b.position.y;
-			});
-		
-		for(i = 0;
-			i < entities.length;
-			i++)
-		{
-			drawEntity(entities[i]);
 		}
 		
 		// backing for coins and text
@@ -1205,6 +1281,12 @@ function draw()
 		canvasContext.globalAlpha = daylightRate;
 		drawRectangle(new v2(0, 0), new v2(64, 64), '#111111', false);
 		canvasContext.restore();
+	
+		if(debugRectDraw)
+		{
+			drawRectangle(debugRectPos, new v2(4, 4), 'magenta', true);
+			debugRectDraw = false;
+		}
 		
 		if(debug)
 		{
@@ -1274,6 +1356,9 @@ function draw()
 		drawText(text, new v2(1, 1), 62);
 	}
 }
+
+var debugRectDraw = false;
+var debugRectPos;
 
 function GetPlantInfo(inventoryName)
 {
