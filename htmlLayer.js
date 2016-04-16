@@ -500,24 +500,24 @@ function update(secondsElapsed)
         debug = !debug;
     }
 	
-	// if (keysPressed[ascii("1")])
-	// {
-		// for(var tileX = 0;
-			// tileX < mapData.width;
-			// tileX++)
-		// {
-			// for(var tileY = 0;
-				// tileY < mapData.height;
-				// tileY++)
-			// {
-				// var plant = mapData.tileEntities[tileX + (tileY * mapData.width)];
-				// if(plant && plant.type == "farmLand")
-				// {
-					// plant.growDays++;
-				// }
-			// }
-		// }
-	// }
+	if (keysPressed[ascii("1")])
+	{
+		for(var tilex = 0;
+			tilex < mapData.width;
+			tilex++)
+		{
+			for(var tiley = 0;
+				tiley < mapData.height;
+				tiley++)
+			{
+				var plant = mapData.tileEntities[tilex + (tiley * mapData.width)];
+				if(plant && plant.type == "farmLand")
+				{
+					plant.growDays++;
+				}
+			}
+		}
+	}
 	
 	if (mode == mode_inventory)
 	{
@@ -563,62 +563,85 @@ function update(secondsElapsed)
 			mode = mode_inventory;
 		}
 		
-		var targetTile = GetPlayerTargetTile();
-		var target = mapData.tileEntities[targetTile.x + (targetTile.y * mapData.width)];
-		var action = "";
-		var item = inventory[selectedItemIndex];
-		if(target && target.type == "farmLand")
+		if(playerAction == null)
 		{
-			if(item.name == inventory_hoe)
+			var targetTile = GetPlayerTargetTile();
+			var target = mapData.tileEntities[targetTile.x + (targetTile.y * mapData.width)];
+			var action = "";
+			var item = inventory[selectedItemIndex];
+			if(target && target.type == "farmLand")
 			{
-				action = "hoe";
-			}
-			if(item.name == inventory_wateringCan)
-			{
-				action = "water";
-			}
-			for(var plantIndex = 0;
-				plantIndex < plants.length;
-				plantIndex++)
-			{
-				var plant = plants[plantIndex];
-				if(target.state == cropState_hoed && item.name == plant.name)
+				if(item.name == inventory_hoe)
+				{
+					action = "hoe";
+				}
+				if(item.name == inventory_wateringCan)
+				{
+					action = "water";
+				}
+				
+				var plant = GetPlantInfo(item.name);
+				if(plant && target.state == cropState_hoed)
 				{
 					action = "plantSeeds";
 				}
-			}
-		}
-		
-		actionHighlight = action != "";
-		actionHighlightPosition.x = targetTile.x * mapData.tileWidth;
-		actionHighlightPosition.y = targetTile.y * mapData.tileHeight;
-		
-		if(keyPressed(actionKeys))
-		{
-			if(action == "hoe")
-			{
-				// do the player action animatin.
-				// play hoe sound.
-				target.state = cropState_hoed;
-				target.growDays = 0;
-			}
-			if(action == "water")
-			{
-				// do the player action animation.
-				// play a watering sound.
-				target.wet = true;
-			}
-			if(action == "plantSeeds")
-			{
-				target.growDays = 0;
-				target.state = item.name;
-				item.amount--;
-				if (item.amount == 0)
+				plant = GetPlantInfo(target.state);
+				if(plant && target.growDays >= plant.daysToGrow)
 				{
-					inventory.splice(selectedItemIndex, 1);
-					if(selectedItemIndex >= inventory.length && selectedItemIndex != 0)
+					action = "harvest";
+				}
+			}
+			
+			actionHighlight = action != "";
+			actionHighlightPosition.x = targetTile.x * mapData.tileWidth;
+			actionHighlightPosition.y = targetTile.y * mapData.tileHeight;
+			
+			if(keyPressed(actionKeys))
+			{
+				if(action == "hoe")
+				{
+					SetPlayerAction("hoe");
+					// do the player action animatin.
+					// play hoe sound.
+					target.state = cropState_hoed;
+					target.growDays = 0;
+				}
+				if(action == "water")
+				{
+					// do the player action animation.
+					// play a watering sound.
+					target.wet = true
+					SetPlayerAction("water");
+				}
+				if(action == "plantSeeds")
+				{
+					SetPlayerAction("plant");
+					target.growDays = 0;
+					target.state = item.name;
+					item.amount--;
+					if (item.amount == 0)
 					{
-						selectedItemIndex--;
+						inventory.splice(selectedItemIndex, 1);
+						if(selectedItemIndex >= inventory.length && selectedItemIndex != 0)
+						{
+							selectedItemIndex--;
+						}
+					}
+				}
+				if(action == "harvest")
+				{
+					SetPlayerAction("harvest");
+					var plant = GetPlantInfo(target.state);
+					AddInventoryItems(plant.inventoryName, 1);
+					
+					if(plant.multiHarvest)
+					{
+						target.growDays -= plant.reGrowDays;
+					}
+					else
+					{
+						target.growDays = 0;
+						target.state = cropState_hoed;
 					}
 				}
 			}
@@ -627,25 +650,51 @@ function update(secondsElapsed)
 	
 	if(playerAction != null)
 	{
-		// End Actions
-		var isActionKeyStillDown = false;
-		if (mode == mode_game)
+		if(playerAction.oneTime)
 		{
-			for(var keyIndex = 0;
-				keyIndex < playerAction.keys.length && !isActionKeyStillDown;
-				keyIndex++)
+			if(playerAction.currentSeconds >= playerAction.totalSeconds)
 			{
-				isActionKeyStillDown = keysDown[playerAction.keys[keyIndex]];
+				if(playerFacing == facingLeft)
+				{
+					player.sprite = playerSpriteLeft.frames[0];
+				}
+				else if(playerFacing == facingRight)
+				{
+					player.sprite = playerSpriteRight.frames[0];
+				}
+				else if(playerFacing == facingUp)
+				{
+					player.sprite = playerSpritenUp.frames[0];
+				}
+				else if(playerFacing == facingDown)
+				{
+					player.sprite = playerSpriteDown.frames[0];
+				}
+				playerAction = null;
 			}
 		}
-		if(!isActionKeyStillDown)
+		else
 		{
-			// End Action
-			if(playerAction.name == "move")
+			// End Actions
+			var isActionKeyStillDown = false;
+			if (mode == mode_game)
 			{
-				player.sprite = player.sprite.animatedFrameSprite.frames[0];
+				for(var keyIndex = 0;
+					keyIndex < playerAction.keys.length && !isActionKeyStillDown;
+					keyIndex++)
+				{
+					isActionKeyStillDown = keysDown[playerAction.keys[keyIndex]];
+				}
 			}
-			playerAction = null;
+			if(!isActionKeyStillDown)
+			{
+				// End Action
+				if(playerAction.name == "move")
+				{
+					player.sprite = player.sprite.animatedFrameSprite.frames[0];
+				}
+				playerAction = null;
+			}
 		}
 	}
 	else if(playerAction == null && mode == mode_game)
@@ -689,35 +738,14 @@ function update(secondsElapsed)
 	// Handle Active Player Actions
 	if(playerAction != null)
 	{
+		playerAction.currentSeconds += secondsElapsed;
 		if(playerAction.name == "move")
 		{
-			playerAction.currentSeconds += secondsElapsed;
 			if(playerAction.currentSeconds >= playerAction.totalSeconds)
 			{
 				TryMoveEntity(player, playerAction.dx, playerAction.dy);
 				playerAction.currentSeconds = 0;
 			}
-			
-			// Tile movement.
-			// var preUpdateSeconds = playerAction.currentSeconds;
-			// playerAction.currentSeconds += secondsElapsed;
-			// // Note(ian): We can seperate x and y if tiles stop being square.
-			// var moveTime = playerAction.totalSeconds / mapData.tileWidth;
-			// for(var timePointIndex = 0;
-				// timePointIndex < mapData.tileWidth;
-				// timePointIndex++)
-			// {
-				// var timePoint = moveTime * timePointIndex;
-				// if(preUpdateSeconds <= timePoint && timePoint < playerAction.currentSeconds)
-				// {
-					// player.position.x += playerAction.dx;
-					// player.position.y += playerAction.dy;
-				// }
-			// }
-			// if(playerAction.currentSeconds >= playerAction.totalSeconds)
-			// {
-				// playerAction = null;
-			// }
 		}
 	}
 	cameraOffset.x = -(player.position.x + (mapData.tileWidth / 2) - (baseCanvasWidth / 2));
@@ -792,6 +820,52 @@ function update(secondsElapsed)
             particles.splice(i, 1);
         }
     }
+}
+
+function SetPlayerAction(actionName)
+{
+	playerAction = {};
+	playerAction.oneTime = true;
+	playerAction.name = actionName;
+	playerAction.currentSeconds = 0;
+	playerAction.totalSeconds = playerActionSeconds;
+	if(playerFacing == facingLeft)
+	{
+		player.sprite = new animatedFrameSpriteInstance(playerSpriteActionLeft);
+	}
+	else if(playerFacing == facingRight)
+	{
+		player.sprite = new animatedFrameSpriteInstance(playerSpriteActionRight);
+	}
+	else if(playerFacing == facingUp)
+	{
+		player.sprite = new animatedFrameSpriteInstance(playerSpriteActionUp);
+	}
+	else if(playerFacing == facingDown)
+	{
+		player.sprite = new animatedFrameSpriteInstance(playerSpriteActionDown);
+	}
+}
+
+function AddInventoryItems(inventoryName, amount)
+{
+	var alreadyExists = false;
+	for(var inventoryIndex = 0;
+		inventoryIndex < inventory.length && !alreadyExists;
+		inventoryIndex++)
+	{
+		var item = inventory[inventoryIndex];
+		if(item.name == inventoryName)
+		{
+			alreadyExists = true;
+			item.amount += amount;
+		}
+	}
+	
+	if(!alreadyExists)
+	{
+		inventory[inventory.length] = new inventoryItem(inventoryName, amount);
+	}
 }
 
 function NextDayEvents()
@@ -883,7 +957,8 @@ function testAndCreateMoveAction(keys, dx, dy, sprite)
 	if(keyHeld(keys))
 	{
 		result = {};
-		result.name = "move"
+		result.name = "move";
+		result.oneTime = false;
 		result.keys = keys;
 		result.currentSeconds = 0;
 		result.totalSeconds = 0.05;
@@ -1036,24 +1111,19 @@ function draw()
 					var imagePosition = new v2(tileX * mapData.tileWidth, tileY * mapData.tileHeight);
 					drawSprite(dirtImage, imagePosition, false);
 					
-					for(var plantIndex = 0;
-						plantIndex < plants.length;
-						plantIndex++)
+					var plant = GetPlantInfo(farmTile.state);
+					if(plant)
 					{
-						var plant = plants[plantIndex];
-						if(farmTile.state == plant.name)
+						if(farmTile.growDays == 0)
 						{
-							if(farmTile.growDays == 0)
-							{
-								// Note(ian): This is already handled generically.
-							}
-							else
-							{
-								var plantPosition = new v2FromV2(imagePosition);
-								plantPosition.y += 4 - plant.spriteSheet.frameHeight;
-								var percent = farmTile.growDays / plant.daysToGrow;
-								drawSpriteSheet(plant.spriteSheet, plantPosition, percent, false);
-							}
+							// Note(ian): This is already handled generically.
+						}
+						else
+						{
+							var plantPosition = new v2FromV2(imagePosition);
+							plantPosition.y += 4 - plant.spriteSheet.frameHeight;
+							var percent = farmTile.growDays / plant.daysToGrow;
+							drawSpriteSheet(plant.spriteSheet, plantPosition, percent, false);
 						}
 					}
 				}
@@ -1203,6 +1273,22 @@ function draw()
 		
 		drawText(text, new v2(1, 1), 62);
 	}
+}
+
+function GetPlantInfo(inventoryName)
+{
+	var result;
+	for(var plantIndex = 0;
+		plantIndex < plants.length;
+		plantIndex++)
+	{
+		var plant = plants[plantIndex];
+		if(inventoryName == plant.name)
+		{
+			result = plant;
+		}
+	}
+	return result;
 }
 
 function GetPlayerTargetTile()
@@ -1651,6 +1737,12 @@ var playerSpriteLeft = new animatedFrameSprite("data/player/FarmerWalkLeft", 4, 
 var playerSpriteRight = new animatedFrameSprite("data/player/FarmerWalkRight", 4, 6);
 var playerSpriteUp = new animatedFrameSprite("data/player/FarmerWalkUp", 4, 6);
 var playerSpriteDown = new animatedFrameSprite("data/player/FarmerWalkDown", 4, 6);
+var playerActionSeconds = 0.1;
+var playerActionFPS = 40;
+var playerSpriteActionUp = new animatedFrameSprite("data/player/FarmerActionUp", 5, playerActionFPS);
+var playerSpriteActionDown = new animatedFrameSprite("data/player/FarmerActionDown", 5, playerActionFPS);
+var playerSpriteActionLeft = new animatedFrameSprite("data/player/FarmerActionLeft", 5, playerActionFPS);
+var playerSpriteActionRight = new animatedFrameSprite("data/player/FarmerActionRight", 5, playerActionFPS);
 
 var cameraOffset = new v2(0, 0);
 var playerSpawn = new v2(0, 0);
