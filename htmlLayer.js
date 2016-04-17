@@ -58,7 +58,7 @@ var map1 =
          "name":"House",
          "opacity":1,
          "type":"tilelayer",
-         "visible":true,
+         "visible":false,
          "width":120,
          "x":0,
          "y":0
@@ -102,6 +102,30 @@ var map1 =
                  "width":1.375,
                  "x":105.281,
                  "y":61.1562
+                }, 
+                {
+                 "ellipse":true,
+                 "height":1.18181818181817,
+                 "id":9,
+                 "name":"store",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":1.54545454545456,
+                 "x":341.454545454545,
+                 "y":121.363636363636
+                }, 
+                {
+                 "ellipse":true,
+                 "height":1.27272727272728,
+                 "id":10,
+                 "name":"storeExit",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":1.54545454545456,
+                 "x":341.454545454545,
+                 "y":129.272727272727
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -143,7 +167,7 @@ var map1 =
          "x":0,
          "y":0
         }],
- "nextobjectid":9,
+ "nextobjectid":11,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tileheight":4,
@@ -502,6 +526,13 @@ function update(secondsElapsed)
         debug = !debug;
     }
 	
+	if (keysPressed[ascii("2")])
+	{
+		mode = mode_store;
+		storeSelection = 0;
+		storeInSellMode = true;
+		playOrRestart(soundOpenInventory);
+	}
 	if (keysPressed[ascii("1")])
 	{
 		for(var tilex = 0;
@@ -564,7 +595,7 @@ function update(secondsElapsed)
 		}
 	}
 	else if (mode == mode_game)
-	{
+	{		
 		if(keyPressed(toggleKeys))
 		{
 			mode = mode_inventory;
@@ -658,6 +689,14 @@ function update(secondsElapsed)
 				}
 			}
 		}
+		
+		if(player.position.x == store.x && player.position.y == store.y)
+		{
+			mode == mode_store;
+			storeSelection = 0;
+			storeInSellMode = true;
+			playOrRestart(soundOpenInventory);
+		}
 	}
 	
 	if(playerAction != null)
@@ -743,6 +782,107 @@ function update(secondsElapsed)
 			else if(playerAction.dy > 0)
 			{
 				playerFacing = facingDown;
+			}
+		}
+	}
+	
+	if(mode == mode_store)
+	{
+		if(keyPressed(upKeys))
+		{
+			if(storeSelection > 0)
+			{
+				storeSelection--;
+				playOrRestart(soundMoveAroundInventory);
+			}
+		}
+		else if(keyPressed(downKeys))
+		{
+			var maxIndex = 0;
+			if(storeInSellMode)
+			{
+				for(var inventoryIndex = 0;
+					inventoryIndex < inventory.length;
+					inventoryIndex++)
+				{
+					var item = inventory[inventoryIndex];
+					var buyItem = GetShopBuyItem(item.name);
+					if(buyItem)
+					{
+						maxIndex++;
+					}
+				}
+			}
+			else
+			{
+				maxIndex = shopSellItems.length;
+			}
+			if(storeSelection < maxIndex)
+			{
+				storeSelection++;
+				playOrRestart(soundMoveAroundInventory);
+			}
+		}
+		else if(keyPressed(leftKeys))
+		{
+			if(!storeInSellMode)
+			{
+				storeInSellMode = true;
+				playOrRestart(soundMoveAroundInventory);
+				storeSelection = 0;
+			}
+		}
+		else if(keyPressed(rightKeys))
+		{
+			if(storeInSellMode)
+			{
+				storeInSellMode = false;
+				playOrRestart(soundMoveAroundInventory);
+				storeSelection = 0;
+			}
+		}
+		else if(keyPressed(toggleKeys))
+		{
+			mode = mode_game;
+			playOrRestart(soundCloseInventory);
+		}
+		else if(keyPressed(actionKeys))
+		{
+			if(storeInSellMode)
+			{
+				var sellIndex = 0;
+				for(var inventoryIndex = 0;
+					inventoryIndex < inventory.length;
+					inventoryIndex++)
+				{
+					var item = inventory[inventoryIndex];
+					var buyItem = GetShopBuyItem(item.name);
+					if(buyItem)
+					{
+						if(sellIndex == (storeSelection - 1))
+						{
+							playOrRestart(soundSell);
+							item.amount--;
+							if(item.amount == 0)
+							{
+								inventory.splice(inventoryIndex, 1);
+							}
+							playerMoney += buyItem.price;
+						}
+						sellIndex++;
+					}
+				}
+			}
+			else
+			{
+				var buyIndex = storeSelection - 1;
+				var buyItem = shopSellItems[buyIndex];
+				if(playerMoney >= buyItem.price)
+				{
+					playerMoney -= buyItem.price;
+					AddInventoryItems(buyItem.name, 1);
+					playOrRestart(soundBuy);
+				}
 			}
 		}
 	}
@@ -1450,6 +1590,123 @@ function draw()
 		
 		drawText(text, new v2(1, 1), 62);
 	}
+	else if (mode == mode_store)
+	{
+		var textSpace = new v2(1, 1);
+		var topPortion = new v2(1, 1);
+		var firstTab = new v2(1, 7);
+		var secondTab = new v2(32, 7);
+		var items = new v2(1, 14);
+		var moneyText = "Money- " + playerMoney;
+		drawText(moneyText, topPortion, 100);
+		
+		var lightColor = '#AA6B39';
+		var darkColor = '#804415';
+		
+		var tabSize = new v2(31, 7);
+		var itemsSize = new v2(62, 52);
+		var color = lightColor;
+		if(!storeInSellMode)
+		{
+			color = darkColor;
+		}
+		drawRectangle(firstTab, tabSize, color, false);
+		drawText("Sell", v2Add(firstTab, textSpace), 100);
+		if(storeInSellMode && storeSelection == 0)
+		{
+			drawRectangle(v2Add(firstTab, new v2(0, 2)), new v2(1, 3), 'white', false);
+		}
+		
+		color = lightColor
+		if(storeInSellMode)
+		{
+			color = darkColor;
+		}
+		drawRectangle(secondTab, tabSize, color, false);
+		drawText("Buy", v2Add(secondTab, textSpace), 100);
+		if(!storeInSellMode && storeSelection == 0)
+		{
+			drawRectangle(v2Add(secondTab, new v2(0, 2)), new v2(1, 3), 'white', false);
+		}
+		
+		drawRectangle(items, itemsSize, lightColor, false);
+		
+		var currentPosition = v2Add(items, textSpace);
+		if(storeInSellMode)
+		{
+			var storeIndex = 0;
+			for(var itemIndex = 0;
+				itemIndex < inventory.length;
+				itemIndex++)
+			{
+				var item = inventory[itemIndex];
+				var shopBuyItem = GetShopBuyItem(item.name);
+				if(shopBuyItem)
+				{
+					var priceText = shopBuyItem.price + "";
+					while(priceText.length < 3)
+					{
+						priceText = " " + priceText;
+					}
+					var itemText = priceText + " - " + item.amount + " " + item.name;
+					if(item.amount > 1)
+					{
+						itemText += "s";
+					}
+					drawText(itemText, currentPosition, 100);
+					
+					if((storeSelection - 1) == storeIndex)
+					{
+						drawRectangle(new v2(currentPosition.x - 1, currentPosition.y + 1), new v2(1, 3), 'white', false);
+					}
+					
+					storeIndex++;
+					currentPosition.y += 6;
+				}
+			}
+		}
+		else
+		{
+			var storeIndex = 0;
+			for(var buyIndex = 0;
+				buyIndex < shopSellItems.length;
+				buyIndex++)
+			{
+				var item = shopSellItems[buyIndex];
+				var text = item.price + "";
+				while(text.length < 3)
+				{
+					text = " " + text;
+				}
+				text += " " + item.name;
+				drawText(text, currentPosition, 100);
+					
+				if((storeSelection - 1) == storeIndex)
+				{
+					drawRectangle(new v2(currentPosition.x - 1, currentPosition.y + 1), new v2(1, 3), 'white', false);
+				}
+				
+				storeIndex++;
+				currentPosition.y += 6;
+			}
+		}
+	}
+}
+
+function GetShopBuyItem(name)
+{
+	var result;
+	for(var shopBuyIndex = 0;
+		shopBuyIndex < shopBuyItems.length && !result;
+		shopBuyIndex++)
+	{
+		var shopBuyItem = shopBuyItems[shopBuyIndex];
+		if(shopBuyItem.name == name)
+		{
+			result = shopBuyItem;
+		}
+	}
+	return result;
 }
 
 function GetPlayerTileX()
@@ -1861,12 +2118,6 @@ function drawSprite(
 //====== INITIALIZE ======
 //
 
-function inventoryItem(name, amount)
-{
-	this.name = name;
-	this.amount = amount;
-}
-
 function staticSprite(name, artRotation)
 {
     this.type = "static";
@@ -1952,6 +2203,8 @@ var playerSpriteActionRight = new animatedFrameSprite("data/player/FarmerActionR
 var cameraOffset = new v2(0, 0);
 var playerSpawn = new v2(0, 0);
 var playerBed = new v2(0, 0);
+var store;
+var storeExit;
 var playerAction = null;
 
 var cropState_none = "none";
@@ -1967,10 +2220,14 @@ var facingDown = 3;
 var playerFacing = facingDown;
 var player = new entity(playerSpawn.x, playerSpawn.y, playerSpriteDown.frames[0]);
 addEntity(player);
+var playerMoney = 0;
 
 var daylightRate = 0;
 var hourOfDay = 0;
 
+var storeSelection;
+var storeInSellMode;
+var mode_store = "store";
 var mode_game = "game";
 var mode_inventory = "inventory";
 var mode_text = "text";
@@ -2001,6 +2258,11 @@ var dirtWet = new staticSprite("data/dirtWet.png", 0);
 var dirtDryPlanted = new staticSprite("data/dirtDryPlanted.png", 0);
 var dirtWetPlanted = new staticSprite("data/dirtWetPlanted.png", 0);
 
+function inventoryItem(name, amount)
+{
+	this.name = name;
+	this.amount = amount;
+}
 var inventoryItemsPerRow = 6;
 var inventory_hoe = "Hoe";
 var inventory_wateringCan = "Watering Can";
@@ -2018,11 +2280,31 @@ var selectedItemIndex = 0;
 var inventory = [];
 inventory[inventory.length] = new inventoryItem(inventory_hoe, 1);
 inventory[inventory.length] = new inventoryItem(inventory_wateringCan, 1);
-inventory[inventory.length] = new inventoryItem(inventory_tomatoSeeds, 3);
-inventory[inventory.length] = new inventoryItem(inventory_pumpkinSeeds, 3);
-inventory[inventory.length] = new inventoryItem(inventory_cornSeeds, 3);
-inventory[inventory.length] = new inventoryItem(inventory_carrotSeeds, 3);
-inventory[inventory.length] = new inventoryItem(inventory_potatoSeeds, 3);
+inventory[inventory.length] = new inventoryItem(inventory_potato, 1);
+// inventory[inventory.length] = new inventoryItem(inventory_tomatoSeeds, 3);
+// inventory[inventory.length] = new inventoryItem(inventory_pumpkinSeeds, 3);
+// inventory[inventory.length] = new inventoryItem(inventory_cornSeeds, 3);
+// inventory[inventory.length] = new inventoryItem(inventory_carrotSeeds, 3);
+// inventory[inventory.length] = new inventoryItem(inventory_potatoSeeds, 3);
+
+function shopItem(name, price)
+{
+	this.name = name;
+	this.price = price;
+}
+var shopBuyItems = [];
+shopBuyItems[shopBuyItems.length] = new shopItem(inventory_tomato, 25);
+shopBuyItems[shopBuyItems.length] = new shopItem(inventory_pumpkin, 100);
+shopBuyItems[shopBuyItems.length] = new shopItem(inventory_corn, 15);
+shopBuyItems[shopBuyItems.length] = new shopItem(inventory_carrot, 25);
+shopBuyItems[shopBuyItems.length] = new shopItem(inventory_potato, 15);
+
+var shopSellItems = [];
+shopSellItems[shopSellItems.length] = new shopItem(inventory_potatoSeeds, 5);
+shopSellItems[shopSellItems.length] = new shopItem(inventory_carrotSeeds, 7);
+shopSellItems[shopSellItems.length] = new shopItem(inventory_pumpkinSeeds, 30);
+shopSellItems[shopSellItems.length] = new shopItem(inventory_cornSeeds, 50);
+shopSellItems[shopSellItems.length] = new shopItem(inventory_tomato, 70);
 
 var spriteSheetPlantTomato = new spriteSheet("data/plantTomato.png", 4, 4);
 var spriteSheetPlantPumpkin = new spriteSheet("data/plantPumpkin.png", 4, 4);
@@ -2086,6 +2368,10 @@ var soundWateringCan = new Audio("data/Music/Watering Can.wav");
 soundWateringCan.volume = defaultSoundVolume;
 var soundPlantSeeds = new Audio("data/Music/PlantSeeds.wav");
 soundPlantSeeds.volume = defaultSoundVolume;
+var soundBuy = new Audio("data/Music/Buy.wav");
+soundBuy.volume = defaultSoundVolume;
+var soundSell = new Audio("data/Music/Sell.wav");
+soundSell.volume = defaultSoundVolume;
 
 function playOrRestart(sound)
 {
@@ -2217,21 +2503,23 @@ function loadMap(mapJson)
                 {
 					var object = layer.objects[j];
 					var position = new v2(object.x, object.y);
-					// var tilePosition = new v2(
-						// Math.floor(position.x),
-						// Math.floor(position.y)
-						// );
+					position.x = Math.floor(position.x / mapData.tileWidth) * mapData.tileWidth;
+					position.y = Math.floor(position.y / mapData.tileHeight) * mapData.tileHeight;
 					if(object.name == "playerSpawn")
 					{
-						position.x = Math.floor(position.x / mapData.tileWidth) * mapData.tileWidth;
-						position.y = Math.floor(position.y / mapData.tileHeight) * mapData.tileHeight;
                         playerSpawn = position;
 					}
 					else if (object.name == "playerBed")
 					{
-						position.x = Math.floor(position.x / mapData.tileWidth) * mapData.tileWidth;
-						position.y = Math.floor(position.y / mapData.tileHeight) * mapData.tileHeight;
                         playerBed = position;
+					}
+					else if (object.name == "store")
+					{
+                        store = position;
+					}
+					else if (object.name == "storeExit")
+					{
+                        storeExit = position;
 					}
 					else if (object.name == "farmland")
 					{
