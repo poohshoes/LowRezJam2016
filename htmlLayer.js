@@ -453,7 +453,7 @@ function doMouseDown(event)
     //canvas_x = event.pageX;
 }
 
-var nextKeysPressed = {};
+var nextKeysPressed = [];
 var keysPressed;
 canvas.addEventListener("keypress", doKeyPress, true);
 function doKeyPress(e)
@@ -461,11 +461,14 @@ function doKeyPress(e)
 	nextKeysPressed[e.keyCode] = true;
 }
 
-var keysDown = {};
+var keysDownNextFrame = []
+var keysDownThisFrame;
+var keysDown = [];
 canvas.addEventListener("keydown", doKeyDown, true);
 function doKeyDown(e)
 {
 	keysDown[e.keyCode] = true;
+	keysDownNextFrame[e.keyCode] = true;
 }
 canvas.addEventListener("keyup", doKeyUp, true);
 function doKeyUp(e)
@@ -500,6 +503,9 @@ function addParticle(particle)
 
 function update(secondsElapsed) 
 {
+	keysDownThisFrame = keysDownNextFrame;
+	keysDownNextFrame = [];	
+	
 	if(player.position.x == playerBed.x && player.position.y == playerBed.y)
 	{
 		hourOfDay = 5;
@@ -657,6 +663,7 @@ function update(secondsElapsed)
 		{
 			action = "store";
 		}
+		//COME BACKelse if(targetTile.x == (
 		
 		actionHighlight = action != "";
 		actionHighlightPosition.x = targetTile.x * mapData.tileWidth;
@@ -1184,7 +1191,8 @@ function keyPressed(keys)
 		keyIndex < keys.length && !keyIsDown;
 		keyIndex++)
 	{
-		keyIsDown = keysPressed[keys[keyIndex]];
+		keyIsDown = keysDownThisFrame[keys[keyIndex]];
+		//keyIsDown = keysPressed[keys[keyIndex]];
 	}
 	return keyIsDown;
 }
@@ -2366,12 +2374,12 @@ plants[plants.length] = new plant(inventory_cornSeeds, inventory_corn, 4, true, 
 plants[plants.length] = new plant(inventory_carrotSeeds, inventory_carrot, 3, false, 0, spriteSheetPlantCarrot);
 plants[plants.length] = new plant(inventory_potatoSeeds, inventory_potato, 2, false, 0, spriteSheetPlantPotato);
 
-var actionKeys = [ascii("E"), ascii("e")]
-var toggleKeys = [ascii("Q"), ascii("q")]
-var upKeys = [ascii("W"), ascii("w")];
-var downKeys = [ascii("S"), ascii("s")];
-var leftKeys = [ascii("A"), ascii("a")];
-var rightKeys = [ascii("D"), ascii("d")];
+var actionKeys = [ascii("E"), ascii("e"), ascii(" "), ascii("x"), ascii("X"), 13]
+var toggleKeys = [ascii("Q"), ascii("q"), ascii("z"), ascii("Z"), 27, 17]
+var upKeys = [ascii("W"), ascii("w"), 38];
+var downKeys = [ascii("S"), ascii("s"), 40];
+var leftKeys = [ascii("A"), ascii("a"), 37];
+var rightKeys = [ascii("D"), ascii("d"), 39];
 
 var fontLoaded = false;
 var font = {};
