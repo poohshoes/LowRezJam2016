@@ -558,13 +558,24 @@ function addParticle(particle)
 
 function update(secondsElapsed) 
 {
+	keysDownThisFrame = keysDownNextFrame;
+	keysDownNextFrame = [];	
+	
 	if(!currentSong || currentSong.ended)
 	{
 		playRandomSong();
 	}
-	
-	keysDownThisFrame = keysDownNextFrame;
-	keysDownNextFrame = [];	
+	if(keyPressed(musicKeys))
+	{
+		if(!currentSong || currentSong.ended || currentSong.paused)
+		{
+			playRandomSong();
+		}
+		else 
+		{
+			currentSong.pause();
+		}
+	}
 	
 	if(player.position.x == playerBed.x && player.position.y == playerBed.y)
 	{
@@ -2328,7 +2339,9 @@ function drawSprite(
 function staticSprite(name, artRotation)
 {
     this.type = "static";
+	imageLoadRequested();
     this.image = new Image();
+	this.image.onload = imageLoaded();
     this.image.src = name;
     this.artRotation = artRotation; // some art (like rockets) is drawn facing up when it should be drawn facing right
 }
@@ -2336,7 +2349,9 @@ function staticSprite(name, artRotation)
 function animatedSprite(name, frameWidth, frameHeight, framesPerSecond)
 {
     this.type = "animated";
+	//imageLoadRequested();
     this.image = new Image();
+	this.image.onload = imageLoaded();
     this.image.src = name;
     this.frameWidth = frameWidth;
     this.frameHeight = frameHeight;
@@ -2348,7 +2363,9 @@ function animatedSprite(name, frameWidth, frameHeight, framesPerSecond)
 function spriteSheet(name, frameWidth, frameHeight)
 {
     this.type = "linearSpriteSheet";
+	imageLoadRequested();
     this.image = new Image();
+	this.image.onload = imageLoaded();
     this.image.src = name;
     this.frameWidth = frameWidth;
     this.frameHeight = frameHeight;
@@ -2407,6 +2424,11 @@ function removeEntity(entity)
 	}
 	entities.splice(index, 1);
 }
+
+var loadRequestsComplete = false;
+var startedGame = false;
+var imagesToLoadCount = 0;
+var imageLoadedCount = 0;
 
 var HalfPI = Math.PI/2;
 
@@ -2582,6 +2604,7 @@ var upKeys = [ascii("W"), ascii("w"), 38];
 var downKeys = [ascii("S"), ascii("s"), 40];
 var leftKeys = [ascii("A"), ascii("a"), 37];
 var rightKeys = [ascii("D"), ascii("d"), 39];
+var musicKeys = [ascii("M"), ascii("m")];
 
 var fontLoaded = false;
 var font = {};
@@ -2656,6 +2679,8 @@ function playRandomSong()
 	}
 	currentSong.play();
 }
+loadRequestsComplete = true;
+readyToRunCheck();
 
 //
 //====== GAME LOOP ======
@@ -2694,8 +2719,26 @@ function reset()
     lastUpdateTime = Date.now();
 }
 
-reset();
-main();
+function imageLoaded()
+{
+	imageLoadedCount++;
+	readyToRunCheck();
+}
+function readyToRunCheck()
+{}
+	// if(loadRequestsComplete &&
+		// !startedGame &&
+		// imageLoadedCount >= imagesToLoadCount)
+	// {
+		// startedGame = true;
+		reset();
+		main();
+	// }
+// }
+function imageLoadRequested()
+{
+	imagesToLoadCount++;
+}
 
 //
 //====== MAP LOADING ======
@@ -2721,7 +2764,9 @@ function loadMap(mapJson)
 		newTileSet.firstId = tileSetJson.firstgid;
 		newTileSet.tileCount = tileSetJson.tilecount;
 		newTileSet.widthInTiles = tileSetJson.columns;
+		imageLoadRequested();
 		newTileSet.image = new Image();
+		newTileSet.image.onload = imageLoaded();
 		newTileSet.image.src = "data/" + tileSetJson.image;
 		mapData.tileSets[mapData.tileSets.length] = newTileSet;
     }
