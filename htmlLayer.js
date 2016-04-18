@@ -558,6 +558,7 @@ function addParticle(particle)
 
 function update(secondsElapsed) 
 {
+
 	keysDownThisFrame = keysDownNextFrame;
 	keysDownNextFrame = [];	
 	
@@ -751,6 +752,17 @@ function update(secondsElapsed)
 					action = "forage";
 					actionEntity = currentEntity;
 				}
+				if((currentEntity.type == "storeMan" && 
+					!storeChatAdvancedToday &&
+					(storeManChatStage + 1) < storeManChat.length
+					) ||
+					(currentEntity.type == "mayor" && 
+					!mayorChatAdvancedToday &&
+					(mayorChatStage + 1) < mayorChat.length))
+				{
+					action = "talk";
+					actionEntity = currentEntity;
+				}
 			}
 		}
 		
@@ -821,7 +833,31 @@ function update(secondsElapsed)
 					removeEntity(actionEntity);
 					AddInventoryItems(actionEntity.type, 1);
 				}
+				if(action == "talk")
+				{
+					playOrRestart(soundOpenInventory);
+					mode = mode_chat;
+					chatType = actionEntity.type;
+					if(actionEntity.type == "storeMan")
+					{
+						storeChatAdvancedToday = true;
+						storeManChatStage++;
+					}
+					if(actionEntity.type == "mayor")
+					{
+						mayorChatAdvancedToday = true;
+						mayorChatStage++;
+					}
+				}
 			}
+		}
+	}
+	else if(mode == mode_chat)
+	{
+		if(keyPressed(actionKeys) || keyPressed(toggleKeys))
+		{
+			mode = mode_game;
+			playOrRestart(soundCloseInventory);
 		}
 	}
 	
@@ -1239,6 +1275,9 @@ function NextDayEvents()
 			}
 		}
 	}
+	
+	mayorChatAdvancedToday = false;
+	storeChatAdvancedToday = false;
 }
 
 function v2WorldToTile(vector)
@@ -1900,6 +1939,21 @@ function draw()
 			}
 		}
 	}
+	else if(mode == mode_chat)
+	{
+		if(chatType == "storeMan")
+		{
+			var text = "Robert- ";
+			text += storeManChat[storeManChatStage].text;
+			drawText(text, new v2(1, 1), 62);
+		}
+		else if(chatType == "mayor")
+		{
+			var text = "Electra- ";
+			text += mayorChat[mayorChatStage].text;
+			drawText(text, new v2(1, 1), 62);
+		}
+	}
 }
 
 function GetShopBuyItem(name)
@@ -2473,13 +2527,17 @@ addEntity(player);
 var playerMoney = 0;
 
 var storeMan = new entity(storeMan1.x, storeMan1.y, storeManSprite);
+storeMan.type = "storeMan";
 addEntity(storeMan);
 var mayor = new entity(mayor1.x, mayor1.y, mayorSprite);
+mayor.type = "mayor";
 addEntity(mayor);
 
 var daylightRate = 0;
 var hourOfDay = 5;
 
+var chatType;
+var mode_chat = "chat";
 var mode_store = "store";
 var mode_game = "game";
 var mode_inventory = "inventory";
@@ -2620,6 +2678,40 @@ for(var glyphIndex = 1;
 {
 	font.glyphX[glyphIndex] = font.glyphX[glyphIndex - 1] + 1 + font.glyphWidths[glyphIndex - 1];
 }
+
+function addChat(list, text)
+{
+	var newChat = {};
+	newChat.type = "text";
+	newChat.text = text;
+	list[list.length] = newChat;
+}
+function addItemQuest(list, ask, thank, item, amount)
+{
+	var newChat = {};
+	newChat.type = "itemQuest";
+	newChat.asked = false;
+	newChat.askText = ask;
+	newChat.thankText = thank;
+	list[list.length] = newChat;
+}
+var mayorChatAdvancedToday = false;
+var mayorChatStage = -1;
+var mayorChat = [];
+addChat(mayorChat, "Oh hello, I'm the mayor!  Welcome to town.");
+//addItemQuest(mayorChat, "That farm looks great for growing lots of crops.  You'll probably have some extra, could you bring me 5 potatoes?.", "Thank you, these potatoes look great", inventory_potato, 5);
+addChat(mayorChat, "I tried to be a farmer, but the dirt and wetness did not agree with my body.");
+addChat(mayorChat, "You won't catch me outside in the rain.");
+
+var storeChatAdvancedToday = false;
+var storeManChatStage = -1;
+var storeManChat = [];
+addChat(storeManChat, "I'm Hugh, I run the store in town.");
+addChat(storeManChat, "I only sell the best seeds, all of them grow seedless vegetables, isn't that great!");
+addChat(storeManChat, "Don't forget to water your plants or else they wont grow.");
+addChat(storeManChat, "The mayor sure sells me a lot of plants, I wonder where he gets them.");
+addChat(storeManChat, "I would lower my prices but the new mayor set a high tax rate.");
+addChat(storeManChat, "If you hadn't moved into town I would have had to close up shop, thanks for shopping!");
 
 var defaultSoundVolume = 0.5;
 var soundOpenInventory = new Audio("data/Music/Open Inventory.wav");
