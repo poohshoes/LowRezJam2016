@@ -608,7 +608,7 @@ function update(secondsElapsed)
 		playRandomSong();
 	}
 	
-	if(!currentSong || currentSong.ended)
+	if(!currentSong || currentSong.ended || currentSong.paused)
 	{
 		playRandomSong();
 	}
@@ -673,41 +673,41 @@ function update(secondsElapsed)
         debug = !debug;
     }
 	
-	if(keysPressed[ascii("4")])
-	{
-		mayorChatStage++;
-	}
+	// if(keysPressed[ascii("4")])
+	// {
+		// mayorChatStage++;
+	// }
 	
-	if (keysPressed[ascii("3")])
-	{
-		newDay();
-	}
+	// if (keysPressed[ascii("3")])
+	// {
+		// newDay();
+	// }
 	
-	if (keysPressed[ascii("2")])
-	{
-		mode = mode_store;
-		storeSelection = 0;
-		storeInSellMode = true;
-		playOrRestart(soundOpenInventory);
-	}
-	if (keysPressed[ascii("1")])
-	{
-		for(var tilex = 0;
-			tilex < mapData.width;
-			tilex++)
-		{
-			for(var tiley = 0;
-				tiley < mapData.height;
-				tiley++)
-			{
-				var plant = mapData.tileEntities[tilex + (tiley * mapData.width)];
-				if(plant && plant.type == "farmLand")
-				{
-					plant.growDays++;
-				}
-			}
-		}
-	}
+	// if (keysPressed[ascii("2")])
+	// {
+		// mode = mode_store;
+		// storeSelection = 0;
+		// storeInSellMode = true;
+		// playOrRestart(soundOpenInventory);
+	// }
+	// if (keysPressed[ascii("1")])
+	// {
+		// for(var tilex = 0;
+			// tilex < mapData.width;
+			// tilex++)
+		// {
+			// for(var tiley = 0;
+				// tiley < mapData.height;
+				// tiley++)
+			// {
+				// var plant = mapData.tileEntities[tilex + (tiley * mapData.width)];
+				// if(plant && plant.type == "farmLand")
+				// {
+					// plant.growDays++;
+				// }
+			// }
+		// }
+	// }
 	
 	if (mode == mode_inventory)
 	{
@@ -1095,36 +1095,39 @@ function update(secondsElapsed)
 		}
 		else if(keyPressed(actionKeys))
 		{
-			if(storeInSellMode)
+			if(storeSelection != 0)
 			{
-				var sellIndex = 0;
-				for(var inventoryIndex = 0;
-					inventoryIndex < inventory.length;
-					inventoryIndex++)
+				if(storeInSellMode)
 				{
-					var item = inventory[inventoryIndex];
-					var buyItem = GetShopBuyItem(item.name);
-					if(buyItem)
+					var sellIndex = 0;
+					for(var inventoryIndex = 0;
+						inventoryIndex < inventory.length;
+						inventoryIndex++)
 					{
-						if(sellIndex == (storeSelection - 1))
+						var item = inventory[inventoryIndex];
+						var buyItem = GetShopBuyItem(item.name);
+						if(buyItem)
 						{
-							playOrRestart(soundSell);
-							RemoveInventoryItem(inventoryIndex, 1);
-							playerMoney += buyItem.price;
+							if(sellIndex == (storeSelection - 1))
+							{
+								playOrRestart(soundSell);
+								RemoveInventoryItem(inventoryIndex, 1);
+								playerMoney += buyItem.price;
+							}
+							sellIndex++;
 						}
-						sellIndex++;
 					}
 				}
-			}
-			else
-			{
-				var buyIndex = storeSelection - 1;
-				var buyItem = shopSellItems[buyIndex];
-				if(playerMoney >= buyItem.price)
+				else
 				{
-					playerMoney -= buyItem.price;
-					AddInventoryItems(buyItem.name, 1);
-					playOrRestart(soundBuy);
+					var buyIndex = storeSelection - 1;
+					var buyItem = shopSellItems[buyIndex];
+					if(playerMoney >= buyItem.price)
+					{
+						playerMoney -= buyItem.price;
+						AddInventoryItems(buyItem.name, 1);
+						playOrRestart(soundBuy);
+					}
 				}
 			}
 		}
@@ -2833,7 +2836,7 @@ var mayorChat = [];
 addChat(mayorChat, "Oh hello, I'm the mayor!  Welcome to town.");
 addItemQuest(mayorChat, "That farm looks great for growing lots of crops.  You'll probably have some extra, could you bring me five potatoes?", "Thank you, these potatoes look great!", inventory_potato, 5);
 addChat(mayorChat, "I tried to be a farmer, but the dirt and wetness did not agree with my body.");
-addItemQuest(mayorChat, "I'm making a stew, could you bring me three mushrooms?  The red ones?", "Very nice thank you.", inventory_mushroom2, 3);
+addItemQuest(mayorChat, "I'm making a stew, could you bring me three mushrooms?  The red ones?", "Very nice thank you.", inventory_mushroom1, 3);
 addChat(mayorChat, "You won't catch me outside in the rain.");
 addItemQuest(mayorChat, "I love to carve pumpkins, will you bring me one?", "This is perfect for carving.", inventory_pumpkin, 1);
 addChat(mayorChat, "I'm working on a big project, it takes up all my time and resources.");
