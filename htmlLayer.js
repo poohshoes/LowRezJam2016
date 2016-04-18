@@ -673,6 +673,11 @@ function update(secondsElapsed)
         debug = !debug;
     }
 	
+	if(keysPressed[ascii("4")])
+	{
+		mayorChatStage++;
+	}
+	
 	if (keysPressed[ascii("3")])
 	{
 		newDay();
@@ -804,11 +809,11 @@ function update(secondsElapsed)
 				}
 				if((currentEntity.type == "storeMan" && 
 					!storeChatAdvancedToday &&
-					(storeManChatStage + 1) < storeManChat.length
+					storeManChatStage < storeManChat.length
 					) ||
 					(currentEntity.type == "mayor" && 
 					!mayorChatAdvancedToday &&
-					(mayorChatStage + 1) < mayorChat.length))
+					mayorChatStage < mayorChat.length))
 				{
 					action = "talk";
 					actionEntity = currentEntity;
@@ -2831,6 +2836,7 @@ addChat(mayorChat, "I tried to be a farmer, but the dirt and wetness did not agr
 addItemQuest(mayorChat, "I'm making a stew, could you bring me three mushrooms?  The red ones?", "Very nice thank you.", inventory_mushroom2, 3);
 addChat(mayorChat, "You won't catch me outside in the rain.");
 addItemQuest(mayorChat, "I love to carve pumpkins, will you bring me one?", "This is perfect for carving.", inventory_pumpkin, 1);
+addChat(mayorChat, "I'm working on a big project, it takes up all my time and resources.");
 addItemQuest(mayorChat, "I've been working on a town project and I need some starfish.  You can collect them from the beach, will you bring me ten of them?", "Very symmetrical, these are asthetically pleasing and will do just fine.", inventory_starfish, 10);
 addChat(mayorChat, "Sorry we don't spend more time together but I'm a very busy man, I'm very busy .. umm.. managing the town.");
 addItemQuest(mayorChat, "Hugh shared a recipe with me and it uses lot's of tomatoes, can you bring me ten?", "Oh wow, these are quite fresh and round.", inventory_tomato, 10);
@@ -2853,22 +2859,27 @@ addChat(storeManChat, "The mayor had me over for dinner last night, it was the s
 addChat(storeManChat, "What could the town project be if it involved vegetables and electronics?");
 addChat(storeManChat, "The mayor has been pestering me for recipes, I just wrote the word tomatoes ten times on a peice of paper and that seems to have placated him.");
 
+var endedGame = false;
 function endGame()
 {
-	addChat(storeManChat, "What a turn of events, I just saw the mayor ride out of town towards the city on a giant robot shouting 'kill all humans'.");
-	addChat(storeManChat, "It's just you and me now, it's probably for the best. Even if the mayor wasn't secretly a killer robot he always put off a strange vibe.");
-	addChat(storeManChat, "If you found the secret robot lab then that's all there is to the game.  Thanks for playing!");
-	
-	for(var entityIndex = 0;
-		entityIndex < entities.length;
-		entityIndex++)
+	if(!endedGame)
 	{
-		var entity = entities[entityIndex];
-		if(entity.type == "mayor" || entity.type == "robot")
+		addChat(storeManChat, "What a turn of events, I just saw the mayor ride out of town towards the city on a giant robot shouting 'kill all humans'.");
+		addChat(storeManChat, "It's just you and me now, it's probably for the best. Even if the mayor wasn't secretly a killer robot he always put off a strange vibe.");
+		addChat(storeManChat, "If you found the secret robot lab then that's all there is to the game.  Thanks for playing!");
+		
+		for(var entityIndex = 0;
+			entityIndex < entities.length;
+			entityIndex++)
 		{
-			entities.splice(entityIndex, 1);
-			entityIndex--;
+			var entity = entities[entityIndex];
+			if(entity.type == "mayor" || entity.type == "robot")
+			{
+				entities.splice(entityIndex, 1);
+				entityIndex--;
+			}
 		}
+		endedGame = true;
 	}
 }
 
