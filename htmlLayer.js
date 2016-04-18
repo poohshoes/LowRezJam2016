@@ -628,6 +628,11 @@ function update(secondsElapsed)
         debug = !debug;
     }
 	
+	if (keysPressed[ascii("3")])
+	{
+		newDay();
+	}
+	
 	if (keysPressed[ascii("2")])
 	{
 		mode = mode_store;
@@ -838,15 +843,26 @@ function update(secondsElapsed)
 					playOrRestart(soundOpenInventory);
 					mode = mode_chat;
 					chatType = actionEntity.type;
-					if(actionEntity.type == "storeMan")
+					
+					if(chatType == "mayor")
 					{
-						storeChatAdvancedToday = true;
-						storeManChatStage++;
-					}
-					if(actionEntity.type == "mayor")
-					{
-						mayorChatAdvancedToday = true;
-						mayorChatStage++;
+						var chatNode = mayorChat[mayorChatStage];
+						if(chatNode.type == "itemQuest" && chatNode.asked == true)
+						{
+							for(var inventoryIndex = 0;
+								inventoryIndex < inventory.length;
+								inventoryIndex++)
+							{
+								var item = inventory[inventoryIndex]
+								if(item.name == chatNode.item && item.amount >= chatNode.amount)
+								{
+									RemoveInventoryItem(inventoryIndex, item.amount);
+									chatNode.completed = true;
+									playOrRestart(soundReward);
+								}
+							}
+						}
+						chatNode.asked = true;
 					}
 				}
 			}
@@ -858,6 +874,25 @@ function update(secondsElapsed)
 		{
 			mode = mode_game;
 			playOrRestart(soundCloseInventory);
+			
+			if(chatType == "storeMan")
+			{
+				storeChatAdvancedToday = true;
+				storeManChatStage++;
+			}
+			if(chatType == "mayor")
+			{
+				var chatNode = mayorChat[mayorChatStage];
+				if(chatNode.type == "itemQuest" && !chatNode.completed)
+				{
+					// Note(ian): Do nothing so that the player can check and complete the quest today.
+				}
+				else
+				{
+					mayorChatAdvancedToday = true;
+					mayorChatStage++;
+				}
+			}
 		}
 	}
 	
@@ -1024,11 +1059,7 @@ function update(secondsElapsed)
 						if(sellIndex == (storeSelection - 1))
 						{
 							playOrRestart(soundSell);
-							item.amount--;
-							if(item.amount == 0)
-							{
-								inventory.splice(inventoryIndex, 1);
-							}
+							RemoveInventoryItem(inventoryIndex, 1);
 							playerMoney += buyItem.price;
 						}
 						sellIndex++;
@@ -1141,6 +1172,16 @@ function update(secondsElapsed)
 	}
 }
 
+function RemoveInventoryItem(inventoryIndex, amount)
+{
+	var item = inventory[inventoryIndex];
+	item.amount -= amount;
+	if(item.amount <= 0)
+	{
+		inventory.splice(inventoryIndex, 1);
+	}
+}
+
 function SetPlayerAction(actionName)
 {
 	playerAction = {};
@@ -1189,8 +1230,18 @@ function AddInventoryItems(inventoryName, amount)
 
 function NextDayEvents()
 {
+	movePlayerHome();
+	newDay();
+}
+
+function movePlayerHome()
+{
 	player.position.x = playerSpawn.x;
 	player.position.y = playerSpawn.y;
+}
+
+function newDay()
+{
 	for(var tileX = 0;
 		tileX < mapData.width;
 		tileX++)
@@ -1943,14 +1994,30 @@ function draw()
 	{
 		if(chatType == "storeMan")
 		{
-			var text = "Robert- ";
+			var text = "Hugh- ";
 			text += storeManChat[storeManChatStage].text;
 			drawText(text, new v2(1, 1), 62);
 		}
 		else if(chatType == "mayor")
 		{
 			var text = "Electra- ";
-			text += mayorChat[mayorChatStage].text;
+			
+			var chatNode = mayorChat[mayorChatStage];
+			if(chatNode.type == "itemQuest")
+			{
+				if(!chatNode.completed)
+				{
+					text += chatNode.askText;
+				}
+				else
+				{
+					text += chatNode.thankText;
+				}
+			}
+			else
+			{
+				text += chatNode.text;
+			}
 			drawText(text, new v2(1, 1), 62);
 		}
 	}
@@ -2691,27 +2758,33 @@ function addItemQuest(list, ask, thank, item, amount)
 	var newChat = {};
 	newChat.type = "itemQuest";
 	newChat.asked = false;
+	newChat.completed = false;
 	newChat.askText = ask;
 	newChat.thankText = thank;
+	newChat.item = item;
+	newChat.amount = amount;
 	list[list.length] = newChat;
 }
 var mayorChatAdvancedToday = false;
-var mayorChatStage = -1;
+var mayorChatStage = 0;
 var mayorChat = [];
 addChat(mayorChat, "Oh hello, I'm the mayor!  Welcome to town.");
-//addItemQuest(mayorChat, "That farm looks great for growing lots of crops.  You'll probably have some extra, could you bring me 5 potatoes?.", "Thank you, these potatoes look great", inventory_potato, 5);
+addItemQuest(mayorChat, "That farm looks great for growing lots of crops.  You'll probably have some extra, could you bring me 5 potatoes?", "Thank you, these potatoes look great!", inventory_potato, 5);
 addChat(mayorChat, "I tried to be a farmer, but the dirt and wetness did not agree with my body.");
 addChat(mayorChat, "You won't catch me outside in the rain.");
 
 var storeChatAdvancedToday = false;
-var storeManChatStage = -1;
+var storeManChatStage = 0;
 var storeManChat = [];
 addChat(storeManChat, "I'm Hugh, I run the store in town.");
 addChat(storeManChat, "I only sell the best seeds, all of them grow seedless vegetables, isn't that great!");
 addChat(storeManChat, "Don't forget to water your plants or else they wont grow.");
 addChat(storeManChat, "The mayor sure sells me a lot of plants, I wonder where he gets them.");
+addChat(storeManChat, "I love the salty smell of the ocean that comes over the town when we have a southerly wind.");
 addChat(storeManChat, "I would lower my prices but the new mayor set a high tax rate.");
 addChat(storeManChat, "If you hadn't moved into town I would have had to close up shop, thanks for shopping!");
+addChat(storeManChat, "I moved here two decades years ago after I lost my family in a car accident, what brought you here?");
+addChat(storeManChat, "The mayor had me over for dinner last night, it was the strangest thing as he said he wasn't hungry.  I must have had too much wine as I don't remember how I got home.");
 
 var defaultSoundVolume = 0.5;
 var soundOpenInventory = new Audio("data/Music/Open Inventory.wav");
@@ -2736,6 +2809,8 @@ var soundBuy = new Audio("data/Music/Buy.wav");
 soundBuy.volume = defaultSoundVolume;
 var soundSell = new Audio("data/Music/Sell.wav");
 soundSell.volume = defaultSoundVolume;
+var soundReward = new Audio("data/Music/Reward.wav");
+soundReward.volume = defaultSoundVolume;
 
 function playOrRestart(sound)
 {
