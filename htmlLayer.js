@@ -560,6 +560,11 @@ function doKeyDown(e)
 {
 	keysDown[e.keyCode] = true;
 	keysDownNextFrame[e.keyCode] = true;
+	// Note(ian): Stop the arrow keys and space from moving the page around.
+	if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1)
+	{
+        e.preventDefault();
+    }
 }
 canvas.addEventListener("keyup", doKeyUp, true);
 function doKeyUp(e)
